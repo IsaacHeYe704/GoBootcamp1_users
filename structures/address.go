@@ -1,4 +1,4 @@
-package structs
+package structures
 
 type Address struct {
 	City    string

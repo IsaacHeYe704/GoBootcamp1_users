@@ -1,16 +1,8 @@
-package structs
+package structures
 
-import (
-	"fmt"
+import "github.com/google/uuid"
 
-	"github.com/google/uuid"
-)
-
-type userManager struct {
-	users map[string]User
-}
-
-var defaultUsers = []User{
+var DefaultUsers = []User{
 	User{
 		"465f8b66-1c38-4980-b11f-aa1169f7bbc2", "Isaac",
 		"Herrera Yepes",
@@ -66,16 +58,4 @@ var defaultUsers = []User{
 			"321 George Street",
 		},
 	},
-}
-
-func NewUserManager() (userManager, error) {
-	manager := userManager{}
-	//initialize users map
-	manager.users = make(map[string]User)
-	for _, user := range defaultUsers {
-		manager.users[user.ID] = user
-	}
-
-	fmt.Println(manager)
-	return manager, nil
 }
