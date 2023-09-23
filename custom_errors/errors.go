@@ -1,4 +1,4 @@
-package structures
+package custom_errors
 
 import "errors"
 

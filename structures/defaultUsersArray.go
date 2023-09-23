@@ -4,13 +4,13 @@ import "github.com/google/uuid"
 
 var DefaultUsers = []User{
 	User{
-		"465f8b66-1c38-4980-b11f-aa1169f7bbc2", "Isaac",
+		uuid.MustParse("465f8b66-1c38-4980-b11f-aa1169f7bbc2"), "Isaac",
 		"Herrera Yepes",
 		"Isaac.herrera@globant.com",
 		false,
 		Address{"Bogota", "Colombia", "Calle 135a ·57a 55"}},
 	User{
-		"a56c6f0d-fe0f-49bf-9dc8-5f619c593d89",
+		uuid.MustParse("a56c6f0d-fe0f-49bf-9dc8-5f619c593d89"),
 		"John",
 		"Doe",
 		"john.doe@example.com",
@@ -22,7 +22,7 @@ var DefaultUsers = []User{
 		},
 	},
 	User{
-		"c20ba804-122f-4063-bb09-6cbfba6a28e6",
+		uuid.MustParse("c20ba804-122f-4063-bb09-6cbfba6a28e6"),
 		"Alice",
 		"Smith",
 		"alice.smith@example.com",
@@ -35,7 +35,7 @@ var DefaultUsers = []User{
 	},
 
 	User{
-		uuid.NewString(),
+		uuid.MustParse("c20ba804-122f-4063-bb09-6cbfba6a28e7"),
 		"Bob",
 		"Johnson",
 		"bob.johnson@example.com",
@@ -47,7 +47,7 @@ var DefaultUsers = []User{
 		},
 	},
 	User{
-		uuid.NewString(),
+		uuid.MustParse("c20ba804-122f-4063-bb09-6cbfba6a28e8"),
 		"Emma",
 		"Davis",
 		"emma.davis@example.com",

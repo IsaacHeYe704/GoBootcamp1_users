@@ -1,7 +1,9 @@
 package structures
 
+import "github.com/google/uuid"
+
 type User struct {
-	ID       string
+	ID       uuid.UUID
 	Name     string
 	LastName string
 	Email    string
