@@ -20,9 +20,9 @@ El map de usuarios debe tener 5 usuarios por default. Es decir ya creados antes 
 
 
 ## Usage
-you can run the package by running its test which are writen under the file /structures/users_test.go
+you can check the package by running its tests which are writen under the file /structures/users_test.go
 ```go
-//run and vervoce all tests
+//run and verbose all tests
 go run ./... -v
 
 ```
