@@ -1,7 +1,7 @@
 package structures
 
 type Address struct {
-	City    string
-	Country string
-	Address string
+	City           string
+	Country        string
+	AddressDetails string
 }

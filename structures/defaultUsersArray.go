@@ -3,13 +3,14 @@ package structures
 import "github.com/google/uuid"
 
 var DefaultUsers = []User{
-	User{
+	{
 		uuid.MustParse("465f8b66-1c38-4980-b11f-aa1169f7bbc2"), "Isaac",
 		"Herrera Yepes",
 		"Isaac.herrera@globant.com",
 		false,
 		Address{"Bogota", "Colombia", "Calle 135a ·57a 55"}},
-	User{
+
+	{
 		uuid.MustParse("a56c6f0d-fe0f-49bf-9dc8-5f619c593d89"),
 		"John",
 		"Doe",
@@ -21,7 +22,7 @@ var DefaultUsers = []User{
 			"123 Main St",
 		},
 	},
-	User{
+	{
 		uuid.MustParse("c20ba804-122f-4063-bb09-6cbfba6a28e6"),
 		"Alice",
 		"Smith",
@@ -34,7 +35,7 @@ var DefaultUsers = []User{
 		},
 	},
 
-	User{
+	{
 		uuid.MustParse("c20ba804-122f-4063-bb09-6cbfba6a28e7"),
 		"Bob",
 		"Johnson",
@@ -46,7 +47,7 @@ var DefaultUsers = []User{
 			"789 Hollywood Blvd",
 		},
 	},
-	User{
+	{
 		uuid.MustParse("c20ba804-122f-4063-bb09-6cbfba6a28e8"),
 		"Emma",
 		"Davis",
