@@ -11,8 +11,8 @@ type User struct {
 	Address  Address
 }
 type UserRequest struct {
-	Name     string `validate:"required"`
-	LastName string `validate:"required"`
+	Name     string `json="name"validate:"required"`
+	LastName string `json="last_name" validate:"required"`
 	Email    string `validate:"required,email"`
 	Active   bool
 	Address  Address `validate:"required"`

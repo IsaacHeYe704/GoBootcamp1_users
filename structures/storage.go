@@ -5,7 +5,6 @@ import (
 )
 
 type Storage interface {
-	NewUserManager() Storage
 	Get(uuid.UUID) (User, error)
 	GetAll() (map[uuid.UUID]User, error)
 	Create(User) (User, error)

@@ -12,10 +12,12 @@ import (
 	"github.com/gorilla/mux"
 )
 
-var usersManager = structures.NewUserManager()
+var localStorage structures.Storage = structures.NewLocalStorage()
+
+var usersService = structures.NewUserService(localStorage)
 
 func GetAllUsers(w http.ResponseWriter, r *http.Request) {
-	users, err := usersManager.GetAll()
+	users, err := usersService.GetAll()
 	//insertar un header
 	w.Header().Set("Content-Type", "application/json")
 	if err != nil {
@@ -40,7 +42,7 @@ func GetUserById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := usersManager.Get(parsedId)
+	user, err := usersService.Get(parsedId)
 	if err != nil {
 		sendError(w, http.StatusNotFound, err)
 		return
@@ -52,6 +54,7 @@ func GetUserById(w http.ResponseWriter, r *http.Request) {
 func PostUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
+	//json marshall
 	var userRequest structures.UserRequest
 	decoder := json.NewDecoder(r.Body)
 	//check if body is in json format
@@ -78,10 +81,10 @@ func PostUser(w http.ResponseWriter, r *http.Request) {
 		Address:  userRequest.Address,
 	}
 	//validate if the user could be stored
-	createdUser, err := usersManager.Create(user)
+	createdUser, err := usersService.Create(user)
 	if err != nil {
 		//que estatus es que ya existe un usuario con ese id?
-		sendError(w, http.StatusBadRequest, err)
+		sendError(w, http.StatusConflict, err)
 		return
 	}
 	//parsear los usuarios a Json
@@ -124,7 +127,7 @@ func PutUsers(w http.ResponseWriter, r *http.Request) {
 		Address:  userRequest.Address,
 	}
 	//validate if the user could be stored
-	updatedUser, err := usersManager.Update(parsedId, user)
+	updatedUser, err := usersService.Update(parsedId, user)
 	if err != nil {
 		sendError(w, http.StatusNotFound, err)
 		return
@@ -144,7 +147,7 @@ func DeleteUsers(w http.ResponseWriter, r *http.Request) {
 	}
 	validator.New()
 
-	err := usersManager.Delete(parsedId)
+	err := usersService.Delete(parsedId)
 	if err != nil {
 		sendError(w, http.StatusNotFound, err)
 		return

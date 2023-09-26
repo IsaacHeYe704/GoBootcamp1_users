@@ -11,6 +11,7 @@ import (
 
 func main() {
 	router := mux.NewRouter()
+	//leer que storage usar segun .env
 
 	router.HandleFunc("/users", handlers.GetAllUsers).Methods("GET")
 	router.HandleFunc("/users/{id}", handlers.GetUserById).Methods("GET")
@@ -20,6 +21,7 @@ func main() {
 
 	fmt.Println("LISTENING TO PORT 3000")
 	// Bind to a port and pass our router in
+	//Errores muy importantes --> generar panic que detiene la app por completo
 	log.Fatal(http.ListenAndServe(":3000", router))
 
 }
