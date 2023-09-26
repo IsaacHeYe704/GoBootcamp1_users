@@ -15,9 +15,10 @@ func main() {
 	router.HandleFunc("/users", handlers.GetAllUsers).Methods("GET")
 	router.HandleFunc("/users/{id}", handlers.GetUserById).Methods("GET")
 	router.HandleFunc("/users/{id}", handlers.DeleteUsers).Methods("DELETE")
+	router.HandleFunc("/users", handlers.PostUser).Methods("POST")
 
-	fmt.Println("LISTENING TO PORT 3001 ")
+	fmt.Println("LISTENING TO PORT 3000")
 	// Bind to a port and pass our router in
-	log.Fatal(http.ListenAndServe(":3001", router))
+	log.Fatal(http.ListenAndServe(":3000", router))
 
 }

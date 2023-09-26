@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bootcam1_users/custom_errors"
 	"bootcam1_users/structures"
 	"encoding/json"
 	"fmt"
@@ -30,24 +31,48 @@ func GetUserById(w http.ResponseWriter, r *http.Request) {
 
 	parsedId, errParsing := uuid.Parse(id)
 	if errParsing != nil {
-		fmt.Printf("error %v", errParsing)
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{
-			"error": fmt.Sprintf(errParsing.Error())})
+		sendError(w, http.StatusBadRequest, errParsing)
 		return
 	}
 
 	user, err := usersManager.Get(parsedId)
 	if err != nil {
-		fmt.Printf("error %v", err)
-		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(map[string]string{
-			"error": fmt.Sprintf(err.Error())})
+		sendError(w, http.StatusNotFound, err)
 		return
 	}
 
 	//parsear los usuarios a Json
 	json.NewEncoder(w).Encode(user)
+}
+func PostUser(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var userRequest structures.UserRequest
+	decoder := json.NewDecoder(r.Body)
+	//check if body is in json format
+	if err := decoder.Decode(&userRequest); err != nil {
+		sendError(w, http.StatusBadRequest, custom_errors.Error_WrongBodyFormat)
+		return
+	}
+
+	//create uuid
+	newUuid := uuid.New()
+	user := structures.User{
+		ID:       newUuid,
+		Name:     userRequest.Name,
+		LastName: userRequest.LastName,
+		Email:    userRequest.LastName,
+		Active:   userRequest.Active,
+		Address:  userRequest.Address,
+	}
+
+	createdUser, err := usersManager.Create(user)
+	if err != nil {
+		sendError(w, http.StatusInternalServerError, err)
+		return
+	}
+	//parsear los usuarios a Json
+	json.NewEncoder(w).Encode(createdUser)
 }
 
 func DeleteUsers(w http.ResponseWriter, r *http.Request) {
@@ -58,19 +83,13 @@ func DeleteUsers(w http.ResponseWriter, r *http.Request) {
 
 	parsedId, errParsing := uuid.Parse(id)
 	if errParsing != nil {
-		fmt.Printf("error %v", errParsing)
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{
-			"error": fmt.Sprintf(errParsing.Error())})
+		sendError(w, http.StatusBadRequest, errParsing)
 		return
 	}
 
 	err := usersManager.Delete(parsedId)
 	if err != nil {
-		fmt.Printf("error %v", err)
-		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(map[string]string{
-			"error": fmt.Sprintf(err.Error())})
+		sendError(w, http.StatusNotFound, err)
 		return
 	}
 
@@ -78,4 +97,11 @@ func DeleteUsers(w http.ResponseWriter, r *http.Request) {
 	//parsear los usuarios a Json
 	json.NewEncoder(w).Encode(map[string]string{
 		"response": fmt.Sprintf("user with id %v deleted", id)})
+}
+func sendError(w http.ResponseWriter, status int, message error) {
+	fmt.Printf("ERROR ON HANDLERS, %v", message)
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": fmt.Sprintf(message.Error()),
+		"code":    fmt.Sprintf("%v", status)})
 }
