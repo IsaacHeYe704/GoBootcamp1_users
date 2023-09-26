@@ -34,7 +34,7 @@ func TestGetAll(t *testing.T) {
 	t.Run("test get", func(t *testing.T) {
 
 		userManager := structures.NewUserManager()
-		users := userManager.GetAll()
+		users, _ := userManager.GetAll()
 		expectedUsers := make(map[uuid.UUID]structures.User)
 		for _, user := range structures.DefaultUsers {
 			expectedUsers[user.ID] = user

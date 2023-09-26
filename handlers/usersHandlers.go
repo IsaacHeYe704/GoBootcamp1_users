@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 )
@@ -14,9 +15,13 @@ import (
 var usersManager = structures.NewUserManager()
 
 func GetAllUsers(w http.ResponseWriter, r *http.Request) {
-	users := usersManager.GetAll()
+	users, err := usersManager.GetAll()
 	//insertar un header
 	w.Header().Set("Content-Type", "application/json")
+	if err != nil {
+		sendError(w, http.StatusNotFound, err)
+		return
+	}
 	//preguntar a Ever
 	w.WriteHeader(http.StatusFound)
 	//parsear los usuarios a Json
@@ -54,6 +59,13 @@ func PostUser(w http.ResponseWriter, r *http.Request) {
 		sendError(w, http.StatusBadRequest, custom_errors.Error_WrongBodyFormat)
 		return
 	}
+	//validate the user received
+	validate := validator.New()
+	structError := validate.Struct(userRequest)
+	if structError != nil {
+		sendError(w, http.StatusBadRequest, structError)
+		return
+	}
 
 	//create uuid
 	newUuid := uuid.New()
@@ -65,16 +77,60 @@ func PostUser(w http.ResponseWriter, r *http.Request) {
 		Active:   userRequest.Active,
 		Address:  userRequest.Address,
 	}
-
+	//validate if the user could be stored
 	createdUser, err := usersManager.Create(user)
 	if err != nil {
-		sendError(w, http.StatusInternalServerError, err)
+		//que estatus es que ya existe un usuario con ese id?
+		sendError(w, http.StatusBadRequest, err)
 		return
 	}
 	//parsear los usuarios a Json
 	json.NewEncoder(w).Encode(createdUser)
 }
+func PutUsers(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
 
+	//check if the id is a valid uuid
+	parsedId, errParsing := uuid.Parse(id)
+	if errParsing != nil {
+		sendError(w, http.StatusBadRequest, errParsing)
+		return
+	}
+
+	var userRequest structures.UserRequest
+	decoder := json.NewDecoder(r.Body)
+	//check if body is in json format
+	if err := decoder.Decode(&userRequest); err != nil {
+		sendError(w, http.StatusBadRequest, custom_errors.Error_WrongBodyFormat)
+		return
+	}
+
+	//validate the user received
+	validate := validator.New()
+	structError := validate.Struct(userRequest)
+	if structError != nil {
+		sendError(w, http.StatusBadRequest, structError)
+		return
+	}
+
+	//parsed structs from userRest to user
+	user := structures.User{
+		ID:       parsedId,
+		Name:     userRequest.Name,
+		LastName: userRequest.LastName,
+		Email:    userRequest.LastName,
+		Active:   userRequest.Active,
+		Address:  userRequest.Address,
+	}
+	//validate if the user could be stored
+	updatedUser, err := usersManager.Update(parsedId, user)
+	if err != nil {
+		sendError(w, http.StatusNotFound, err)
+		return
+	}
+	json.NewEncoder(w).Encode(updatedUser)
+}
 func DeleteUsers(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
@@ -86,6 +142,7 @@ func DeleteUsers(w http.ResponseWriter, r *http.Request) {
 		sendError(w, http.StatusBadRequest, errParsing)
 		return
 	}
+	validator.New()
 
 	err := usersManager.Delete(parsedId)
 	if err != nil {

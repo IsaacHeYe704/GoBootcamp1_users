@@ -6,12 +6,12 @@ import (
 	"github.com/google/uuid"
 )
 
-type userManager struct {
+type userLocalManager struct {
 	users map[uuid.UUID]User
 }
 
-func NewUserManager() userManager {
-	manager := userManager{}
+func NewUserManager() userLocalManager {
+	manager := userLocalManager{}
 
 	//initialize users map
 	manager.users = make(map[uuid.UUID]User)
@@ -22,7 +22,7 @@ func NewUserManager() userManager {
 	return manager
 }
 
-func (u *userManager) Get(uuid uuid.UUID) (User, error) {
+func (u *userLocalManager) Get(uuid uuid.UUID) (User, error) {
 	user, ok := u.users[uuid]
 	if !ok {
 		return User{}, custom_errors.Error_UserNotFound
@@ -30,11 +30,11 @@ func (u *userManager) Get(uuid uuid.UUID) (User, error) {
 
 	return user, nil
 }
-func (u *userManager) GetAll() map[uuid.UUID]User {
+func (u *userLocalManager) GetAll() (map[uuid.UUID]User, error) {
 
-	return u.users
+	return u.users, nil
 }
-func (u *userManager) Create(user User) (User, error) {
+func (u *userLocalManager) Create(user User) (User, error) {
 	//crear id aca
 	_, found := u.users[user.ID]
 	if found {
@@ -45,7 +45,7 @@ func (u *userManager) Create(user User) (User, error) {
 
 	return u.users[user.ID], nil
 }
-func (u *userManager) Update(uuid uuid.UUID, user User) (User, error) {
+func (u *userLocalManager) Update(uuid uuid.UUID, user User) (User, error) {
 	_, found := u.users[user.ID]
 	if !found {
 		return User{}, custom_errors.Error_UserNotFound
@@ -55,7 +55,7 @@ func (u *userManager) Update(uuid uuid.UUID, user User) (User, error) {
 
 	return u.users[user.ID], nil
 }
-func (u *userManager) Delete(uuid uuid.UUID) error {
+func (u *userLocalManager) Delete(uuid uuid.UUID) error {
 	_, found := u.users[uuid]
 	if !found {
 		return custom_errors.Error_UserNotFound
