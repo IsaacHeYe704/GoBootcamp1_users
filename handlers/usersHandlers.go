@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bootcam1_users/custom_errors"
+	"bootcam1_users/service"
 	"bootcam1_users/structures"
 	"encoding/json"
 	"fmt"
@@ -10,11 +11,19 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	"github.com/redis/go-redis/v9"
 )
 
 var localStorage structures.Storage = structures.NewLocalStorage()
 
-var usersService = structures.NewUserService(localStorage)
+var connection = redis.NewClient(&redis.Options{
+	Addr:     fmt.Sprintf("localhost:6379"),
+	Password: "", // no password set
+	DB:       0,  // use default DB
+})
+var redisStorage = structures.NewRedisStorage(connection)
+
+var usersService = service.NewUserService(localStorage)
 
 func GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	users, err := usersService.GetAll()
@@ -70,23 +79,13 @@ func PostUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//create uuid
-	newUuid := uuid.New()
-	user := structures.User{
-		ID:       newUuid,
-		Name:     userRequest.Name,
-		LastName: userRequest.LastName,
-		Email:    userRequest.LastName,
-		Active:   userRequest.Active,
-		Address:  userRequest.Address,
-	}
 	//validate if the user could be stored
-	createdUser, err := usersService.Create(user)
+	createdUser, err := usersService.Create(userRequest)
 	if err != nil {
-		//que estatus es que ya existe un usuario con ese id?
 		sendError(w, http.StatusConflict, err)
 		return
 	}
+
 	//parsear los usuarios a Json
 	json.NewEncoder(w).Encode(createdUser)
 }
