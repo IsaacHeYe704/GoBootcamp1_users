@@ -11,14 +11,14 @@ type User struct {
 	Address  Address
 }
 type UserRequest struct {
-	Name     string `json="name"validate:"required"`
-	LastName string `json="last_name" validate:"required"`
-	Email    string `validate:"required,email"`
+	Name     string `json:"name" validate:"required"`
+	LastName string `json:"last_name" validate:"required"`
+	Email    string `json:"email" validate:"required,email"`
 	Active   bool
-	Address  Address `validate:"required"`
+	Address  Address `json:"address" validate:"required"`
 }
 type Address struct {
-	City           string `validate:"required"`
-	Country        string `validate:"required"`
-	AddressDetails string `validate:"required"`
+	City           string `json:"city" validate:"required"`
+	Country        string `json:"country" validate:"required"`
+	AddressDetails string `json:"address_details" validate:"required"`
 }
