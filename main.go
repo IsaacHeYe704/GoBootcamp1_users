@@ -1,9 +1,9 @@
 package main
 
 import (
+	"bootcam1_users/db"
 	"bootcam1_users/handlers"
 	"bootcam1_users/service"
-	"bootcam1_users/structures"
 	"fmt"
 	"log"
 	"net/http"
@@ -16,7 +16,7 @@ import (
 
 func main() {
 	router := mux.NewRouter()
-	var storage structures.Storage
+	var storage db.Storage
 	//Read .env to choose if we should use localstorage or redis
 	switch goDotEnvVariable("STORAGE") {
 	case "Redis":
@@ -26,19 +26,19 @@ func main() {
 			Password: "", // no password set
 			DB:       0,  // use default DB
 		})
-		storage = structures.NewRedisStorage(connection)
+		storage = db.NewRedisStorage(connection)
 	default:
 		fmt.Println("USING LOCAL STORAGE...")
-		storage = structures.NewLocalStorage()
+		storage = db.NewLocalStorage()
 	}
 	//declare the user service injecting the storage dependency
 	var usersService = service.NewUserService(storage)
 
 	//ROUTER
 	router.HandleFunc("/users", handlers.GetAllUsers(usersService)).Methods("GET")
+	router.HandleFunc("/users", handlers.PostUser(usersService)).Methods("POST")
 	router.HandleFunc("/users/{id}", handlers.GetUserById(usersService)).Methods("GET")
 	router.HandleFunc("/users/{id}", handlers.DeleteUsers(usersService)).Methods("DELETE")
-	router.HandleFunc("/users", handlers.PostUser(usersService)).Methods("POST")
 	router.HandleFunc("/users/{id}", handlers.PutUsers(usersService)).Methods("PUT")
 
 	fmt.Println("LISTENING TO PORT 3000")

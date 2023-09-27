@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bootcam1_users/db"
 	"bootcam1_users/structures"
 	"fmt"
 	"log/slog"
@@ -9,10 +10,10 @@ import (
 )
 
 type UserService struct {
-	storage structures.Storage
+	storage db.Storage
 }
 
-func NewUserService(storage structures.Storage) UserService {
+func NewUserService(storage db.Storage) UserService {
 	return UserService{storage: storage}
 }
 

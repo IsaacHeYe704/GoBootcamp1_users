@@ -1,7 +1,8 @@
-package structures
+package db
 
 import (
 	"bootcam1_users/custom_errors"
+	"bootcam1_users/structures"
 	"context"
 	"encoding/json"
 	"errors"
@@ -20,15 +21,15 @@ func NewRedisStorage(connection *redis.Client) Storage {
 
 	return &redis
 }
-func (rs *redisStorage) Get(uuid uuid.UUID) (User, error) {
+func (rs *redisStorage) Get(uuid uuid.UUID) (structures.User, error) {
 	//read string
 	val, errGet := rs.connection.Get(context.Background(), "user_"+uuid.String()).Result()
 	if errGet != nil {
-		return User{}, custom_errors.Error_UserNotFound
+		return structures.User{}, custom_errors.Error_UserNotFound
 	}
 	return parseUser(val)
 }
-func (rs *redisStorage) GetAll() ([]User, error) {
+func (rs *redisStorage) GetAll() ([]structures.User, error) {
 	// Create a context
 	ctx := context.TODO()
 
@@ -57,23 +58,23 @@ func (rs *redisStorage) GetAll() ([]User, error) {
 	//use the keys to retrieve the documents
 	values, err := rs.connection.MGet(ctx, keys...).Result()
 	if err != nil {
-		return []User{}, errors.New("error consultando reultados")
+		return []structures.User{}, errors.New("error consultando reultados")
 
 	}
 
 	//parse from jsonString to User struct and return the users
 	return parseUserArray(values)
 }
-func (rs *redisStorage) Create(user User) (User, error) {
+func (rs *redisStorage) Create(user structures.User) (structures.User, error) {
 	//check if user exists
 	_, errGet := rs.Get(user.ID)
 	if errGet == nil {
-		return User{}, custom_errors.Error_UuidAlreadyExists
+		return structures.User{}, custom_errors.Error_UuidAlreadyExists
 	}
 	//marshal to json string
 	jsonVal, err := json.Marshal(user)
 	if err != nil {
-		return User{}, err
+		return structures.User{}, err
 	}
 
 	//save in database
@@ -85,16 +86,16 @@ func (rs *redisStorage) Create(user User) (User, error) {
 	//parse string to User
 	return rs.Get(user.ID)
 }
-func (rs *redisStorage) Update(uuid uuid.UUID, newUser User) (User, error) {
+func (rs *redisStorage) Update(uuid uuid.UUID, newUser structures.User) (structures.User, error) {
 	//check if user exists
 	_, errGet := rs.Get(uuid)
 	if errGet != nil {
-		return User{}, custom_errors.Error_UserNotFound
+		return structures.User{}, custom_errors.Error_UserNotFound
 	}
 	//marshal to json string
 	jsonVal, err := json.Marshal(newUser)
 	if err != nil {
-		return User{}, err
+		return structures.User{}, err
 	}
 
 	//save in database
@@ -118,8 +119,8 @@ func (rs *redisStorage) Delete(id uuid.UUID) error {
 	return errDeleting
 }
 
-func parseUserArray(usersArr []interface{}) ([]User, error) {
-	usersParsed := make([]User, 0)
+func parseUserArray(usersArr []interface{}) ([]structures.User, error) {
+	usersParsed := make([]structures.User, 0)
 	for _, userToParse := range usersArr {
 		//parse this user
 		user, _ := parseUser(fmt.Sprint(userToParse))
@@ -127,11 +128,11 @@ func parseUserArray(usersArr []interface{}) ([]User, error) {
 	}
 	return usersParsed, nil
 }
-func parseUser(jsonVal string) (User, error) {
-	data := User{}
+func parseUser(jsonVal string) (structures.User, error) {
+	data := structures.User{}
 	err := json.Unmarshal([]byte(jsonVal), &data)
 	if err != nil {
-		return User{}, custom_errors.Error_ParsingJson
+		return structures.User{}, custom_errors.Error_ParsingJson
 	}
 	return data, nil
 }

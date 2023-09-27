@@ -1,4 +1,4 @@
-package structures_test
+package db_test
 
 import (
 	"reflect"
@@ -7,14 +7,15 @@ import (
 	"github.com/google/uuid"
 
 	"bootcam1_users/custom_errors"
+	"bootcam1_users/db"
 	"bootcam1_users/structures"
 )
 
 func TestLocalGet(t *testing.T) {
 	t.Run("test get", func(t *testing.T) {
-		testUuid := structures.DefaultUsers[2].ID
-		expectedUser := structures.DefaultUsers[2]
-		userManager := structures.NewLocalStorage()
+		testUuid := db.DefaultUsers[2].ID
+		expectedUser := db.DefaultUsers[2]
+		userManager := db.NewLocalStorage()
 		user, _ := userManager.Get(testUuid)
 
 		if user != expectedUser {
@@ -22,7 +23,7 @@ func TestLocalGet(t *testing.T) {
 		}
 	})
 	t.Run("test get not existing uudi", func(t *testing.T) {
-		userManager := structures.NewLocalStorage()
+		userManager := db.NewLocalStorage()
 		_, err := userManager.Get(uuid.UUID{})
 		expectedError := custom_errors.Error_UserNotFound
 		if expectedError != err {
@@ -33,10 +34,10 @@ func TestLocalGet(t *testing.T) {
 func TestLocalGetAll(t *testing.T) {
 	t.Run("test get", func(t *testing.T) {
 
-		userManager := structures.NewLocalStorage()
+		userManager := db.NewLocalStorage()
 		users, _ := userManager.GetAll()
 		expectedUsers := make(map[uuid.UUID]structures.User)
-		for _, user := range structures.DefaultUsers {
+		for _, user := range db.DefaultUsers {
 			expectedUsers[user.ID] = user
 		}
 		if !reflect.DeepEqual(expectedUsers, users) {
@@ -44,7 +45,7 @@ func TestLocalGetAll(t *testing.T) {
 		}
 	})
 	t.Run("test get not existing uudi", func(t *testing.T) {
-		userManager := structures.NewLocalStorage()
+		userManager := db.NewLocalStorage()
 		_, err := userManager.Get(uuid.UUID{})
 		expectedError := custom_errors.Error_UserNotFound
 		if expectedError != err {
@@ -60,7 +61,7 @@ func TestLocalCreate(t *testing.T) {
 			"Isaac.herreraInserted@globant.com",
 			false,
 			structures.Address{"Bogota", "Colombia", "Calle 135a ·57a 55"}}
-		userManager := structures.NewLocalStorage()
+		userManager := db.NewLocalStorage()
 		gotUser, _ := userManager.Create(testUser)
 
 		if testUser != gotUser {
@@ -69,8 +70,8 @@ func TestLocalCreate(t *testing.T) {
 	})
 	t.Run("create an user with existing uuid should return an error", func(t *testing.T) {
 		//an user with this id is already inserted in the userManagment creatin
-		duplicatedUser := structures.DefaultUsers[1]
-		userManager := structures.NewLocalStorage()
+		duplicatedUser := db.DefaultUsers[1]
+		userManager := db.NewLocalStorage()
 		_, err := userManager.Create(duplicatedUser)
 		expectErr := custom_errors.Error_UuidAlreadyExists
 		if err != expectErr {
@@ -101,7 +102,7 @@ func TestLocalUpdate(t *testing.T) {
 			"Isaac.herreraUpdated@globant.com",
 			false,
 			structures.Address{"Bogota", "Colombia", "Calle 135a ·57a 55"}}
-		userManager := structures.NewLocalStorage()
+		userManager := db.NewLocalStorage()
 		gotUser, _ := userManager.Update(updatedUser.ID, updatedUser)
 
 		if updatedUser != gotUser {
@@ -116,7 +117,7 @@ func TestLocalUpdate(t *testing.T) {
 			"NA@globant.com",
 			false,
 			structures.Address{"Bogota", "Colombia", "Calle 135a ·57a 55"}}
-		userManager := structures.NewLocalStorage()
+		userManager := db.NewLocalStorage()
 		_, err := userManager.Update(doesntExist.ID, doesntExist)
 		expectErr := custom_errors.Error_UserNotFound
 		if err != expectErr {
@@ -126,8 +127,8 @@ func TestLocalUpdate(t *testing.T) {
 }
 func TestLocalDelete(t *testing.T) {
 	t.Run("delete user", func(t *testing.T) {
-		testUser := structures.DefaultUsers[0]
-		userManager := structures.NewLocalStorage()
+		testUser := db.DefaultUsers[0]
+		userManager := db.NewLocalStorage()
 		userManager.Delete(testUser.ID)
 		_, err := userManager.Get(testUser.ID)
 		expectedError := custom_errors.Error_UserNotFound
@@ -138,7 +139,7 @@ func TestLocalDelete(t *testing.T) {
 	t.Run("should not delete a not existing uuid", func(t *testing.T) {
 		//an user with this id is already inserted in the userManagment creatin
 		testUuid := uuid.UUID{}
-		userManager := structures.NewLocalStorage()
+		userManager := db.NewLocalStorage()
 		err := userManager.Delete(testUuid)
 		expectedError := custom_errors.Error_UserNotFound
 		if expectedError != err {
