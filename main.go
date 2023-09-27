@@ -2,8 +2,8 @@ package main
 
 import (
 	"bootcam1_users/handlers"
+	"bootcam1_users/service"
 	"bootcam1_users/structures"
-	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -14,36 +14,39 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-var ctx = context.Background()
-
-func testRedis() {
-	port := goDotEnvVariable("REDIS_PORT")
-	connection := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("localhost:%v", port),
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
-	structures.NewRedisStorage(connection)
-}
 func main() {
 	router := mux.NewRouter()
-	//leer que storage usar segun .env
+	var storage structures.Storage
+	//Read .env to choose if we should use localstorage or redis
+	switch goDotEnvVariable("STORAGE") {
+	case "Redis":
+		fmt.Println("USING REDIS STORAGE...")
+		var connection = redis.NewClient(&redis.Options{
+			Addr:     fmt.Sprintf(goDotEnvVariable("REDIS_ADDR")),
+			Password: "", // no password set
+			DB:       0,  // use default DB
+		})
+		storage = structures.NewRedisStorage(connection)
+	default:
+		fmt.Println("USING LOCAL STORAGE...")
+		storage = structures.NewLocalStorage()
+	}
+	//declare the user service injecting the storage dependency
+	var usersService = service.NewUserService(storage)
 
-	testRedis()
-
-	router.HandleFunc("/users", handlers.GetAllUsers).Methods("GET")
-	router.HandleFunc("/users/{id}", handlers.GetUserById).Methods("GET")
-	router.HandleFunc("/users/{id}", handlers.DeleteUsers).Methods("DELETE")
-	router.HandleFunc("/users", handlers.PostUser).Methods("POST")
-	router.HandleFunc("/users/{id}", handlers.PutUsers).Methods("PUT")
+	//ROUTER
+	router.HandleFunc("/users", handlers.GetAllUsers(usersService)).Methods("GET")
+	router.HandleFunc("/users/{id}", handlers.GetUserById(usersService)).Methods("GET")
+	router.HandleFunc("/users/{id}", handlers.DeleteUsers(usersService)).Methods("DELETE")
+	router.HandleFunc("/users", handlers.PostUser(usersService)).Methods("POST")
+	router.HandleFunc("/users/{id}", handlers.PutUsers(usersService)).Methods("PUT")
 
 	fmt.Println("LISTENING TO PORT 3000")
-	// Bind to a port and pass our router in
-	//Errores muy importantes --> generar panic que detiene la app por completo
+	// // Bind to a port and pass our router in
 	log.Fatal(http.ListenAndServe(":3000", router))
-
 }
 
+// Auxiliar function to get a .env var
 func goDotEnvVariable(key string) string {
 
 	// load .env file

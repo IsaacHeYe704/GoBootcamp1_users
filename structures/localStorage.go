@@ -31,9 +31,12 @@ func (l *localStorage) Get(uuid uuid.UUID) (User, error) {
 
 	return user, nil
 }
-func (l *localStorage) GetAll() (map[uuid.UUID]User, error) {
-
-	return l.users, nil
+func (l *localStorage) GetAll() ([]User, error) {
+	users := make([]User, 0)
+	for _, val := range l.users {
+		users = append(users, val)
+	}
+	return users, nil
 }
 func (l *localStorage) Create(user User) (User, error) {
 	//crear id aca

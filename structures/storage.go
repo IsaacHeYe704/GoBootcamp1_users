@@ -6,7 +6,7 @@ import (
 
 type Storage interface {
 	Get(uuid.UUID) (User, error)
-	GetAll() (map[uuid.UUID]User, error)
+	GetAll() ([]User, error)
 	Create(User) (User, error)
 	Update(uuid.UUID, User) (User, error)
 	Delete(uuid.UUID) error

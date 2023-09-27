@@ -6,159 +6,167 @@ import (
 	"bootcam1_users/structures"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
-	"github.com/redis/go-redis/v9"
 )
 
-var localStorage structures.Storage = structures.NewLocalStorage()
-
-var connection = redis.NewClient(&redis.Options{
-	Addr:     fmt.Sprintf("localhost:6379"),
-	Password: "", // no password set
-	DB:       0,  // use default DB
-})
-var redisStorage = structures.NewRedisStorage(connection)
-
-var usersService = service.NewUserService(localStorage)
-
-func GetAllUsers(w http.ResponseWriter, r *http.Request) {
-	users, err := usersService.GetAll()
-	//insertar un header
-	w.Header().Set("Content-Type", "application/json")
-	if err != nil {
-		sendError(w, http.StatusNotFound, err)
-		return
+func GetAllUsers(service service.UserService) func(w http.ResponseWriter, r *http.Request) {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		users, err := service.GetAll()
+		//insertar un header
+		w.Header().Set("Content-Type", "application/json")
+		if err != nil {
+			sendError(w, http.StatusNotFound, err)
+			return
+		}
+		//preguntar a Ever
+		w.WriteHeader(http.StatusFound)
+		//parsear los usuarios a Json
+		json.NewEncoder(w).Encode(users)
 	}
-	//preguntar a Ever
-	w.WriteHeader(http.StatusFound)
-	//parsear los usuarios a Json
-	json.NewEncoder(w).Encode(users)
+
+	return fn
 }
 
-func GetUserById(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
-	//insertar un header
-	w.Header().Set("Content-Type", "application/json")
+func GetUserById(service service.UserService) func(w http.ResponseWriter, r *http.Request) {
 
-	parsedId, errParsing := uuid.Parse(id)
-	if errParsing != nil {
-		sendError(w, http.StatusBadRequest, errParsing)
-		return
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		id := vars["id"]
+		//insertar un header
+		w.Header().Set("Content-Type", "application/json")
+
+		parsedId, errParsing := uuid.Parse(id)
+		if errParsing != nil {
+			sendError(w, http.StatusBadRequest, errParsing)
+			return
+		}
+
+		user, err := service.Get(parsedId)
+		if err != nil {
+			sendError(w, http.StatusNotFound, err)
+			return
+		}
+
+		//parsear los usuarios a Json
+		json.NewEncoder(w).Encode(user)
 	}
-
-	user, err := usersService.Get(parsedId)
-	if err != nil {
-		sendError(w, http.StatusNotFound, err)
-		return
-	}
-
-	//parsear los usuarios a Json
-	json.NewEncoder(w).Encode(user)
+	return fn
 }
-func PostUser(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+func PostUser(service service.UserService) func(w http.ResponseWriter, r *http.Request) {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 
-	//json marshall
-	var userRequest structures.UserRequest
-	decoder := json.NewDecoder(r.Body)
-	//check if body is in json format
-	if err := decoder.Decode(&userRequest); err != nil {
-		sendError(w, http.StatusBadRequest, custom_errors.Error_WrongBodyFormat)
-		return
-	}
-	//validate the user received
-	validate := validator.New()
-	structError := validate.Struct(userRequest)
-	if structError != nil {
-		sendError(w, http.StatusBadRequest, structError)
-		return
-	}
+		//json marshall
+		var userRequest structures.UserRequest
+		decoder := json.NewDecoder(r.Body)
+		//check if body is in json format
+		if err := decoder.Decode(&userRequest); err != nil {
+			sendError(w, http.StatusBadRequest, custom_errors.Error_WrongBodyFormat)
+			return
+		}
+		//validate the user received
+		validate := validator.New()
+		structError := validate.Struct(userRequest)
+		if structError != nil {
+			sendError(w, http.StatusBadRequest, structError)
+			return
+		}
 
-	//validate if the user could be stored
-	createdUser, err := usersService.Create(userRequest)
-	if err != nil {
-		sendError(w, http.StatusConflict, err)
-		return
-	}
+		//validate if the user could be stored
+		createdUser, err := service.Create(userRequest)
+		if err != nil {
+			sendError(w, http.StatusConflict, err)
+			return
+		}
 
-	//parsear los usuarios a Json
-	json.NewEncoder(w).Encode(createdUser)
+		//parsear los usuarios a Json
+		json.NewEncoder(w).Encode(createdUser)
+	}
+	return fn
 }
-func PutUsers(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
+func PutUsers(service service.UserService) func(w http.ResponseWriter, r *http.Request) {
+	fn := func(w http.ResponseWriter, r *http.Request) {
 
-	//check if the id is a valid uuid
-	parsedId, errParsing := uuid.Parse(id)
-	if errParsing != nil {
-		sendError(w, http.StatusBadRequest, errParsing)
-		return
-	}
+		vars := mux.Vars(r)
+		id := vars["id"]
 
-	var userRequest structures.UserRequest
-	decoder := json.NewDecoder(r.Body)
-	//check if body is in json format
-	if err := decoder.Decode(&userRequest); err != nil {
-		sendError(w, http.StatusBadRequest, custom_errors.Error_WrongBodyFormat)
-		return
-	}
+		//check if the id is a valid uuid
+		parsedId, errParsing := uuid.Parse(id)
+		if errParsing != nil {
+			sendError(w, http.StatusBadRequest, errParsing)
+			return
+		}
 
-	//validate the user received
-	validate := validator.New()
-	structError := validate.Struct(userRequest)
-	if structError != nil {
-		sendError(w, http.StatusBadRequest, structError)
-		return
-	}
+		var userRequest structures.UserRequest
+		decoder := json.NewDecoder(r.Body)
+		//check if body is in json format
+		if err := decoder.Decode(&userRequest); err != nil {
+			sendError(w, http.StatusBadRequest, custom_errors.Error_WrongBodyFormat)
+			return
+		}
 
-	//parsed structs from userRest to user
-	user := structures.User{
-		ID:       parsedId,
-		Name:     userRequest.Name,
-		LastName: userRequest.LastName,
-		Email:    userRequest.LastName,
-		Active:   userRequest.Active,
-		Address:  userRequest.Address,
+		//validate the user received
+		validate := validator.New()
+		structError := validate.Struct(userRequest)
+		if structError != nil {
+			sendError(w, http.StatusBadRequest, structError)
+			return
+		}
+
+		//parsed structs from userRest to user
+		user := structures.User{
+			ID:       parsedId,
+			Name:     userRequest.Name,
+			LastName: userRequest.LastName,
+			Email:    userRequest.LastName,
+			Active:   userRequest.Active,
+			Address:  userRequest.Address,
+		}
+		//validate if the user could be stored
+		updatedUser, err := service.Update(parsedId, user)
+		if err != nil {
+			sendError(w, http.StatusNotFound, err)
+			return
+		}
+		json.NewEncoder(w).Encode(updatedUser)
 	}
-	//validate if the user could be stored
-	updatedUser, err := usersService.Update(parsedId, user)
-	if err != nil {
-		sendError(w, http.StatusNotFound, err)
-		return
-	}
-	json.NewEncoder(w).Encode(updatedUser)
+	return fn
 }
-func DeleteUsers(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
-	//insertar un header
-	w.Header().Set("Content-Type", "application/json")
+func DeleteUsers(service service.UserService) func(w http.ResponseWriter, r *http.Request) {
+	fn := func(w http.ResponseWriter, r *http.Request) {
 
-	parsedId, errParsing := uuid.Parse(id)
-	if errParsing != nil {
-		sendError(w, http.StatusBadRequest, errParsing)
-		return
+		vars := mux.Vars(r)
+		id := vars["id"]
+		//insertar un header
+		w.Header().Set("Content-Type", "application/json")
+
+		parsedId, errParsing := uuid.Parse(id)
+		if errParsing != nil {
+			sendError(w, http.StatusBadRequest, errParsing)
+			return
+		}
+		validator.New()
+
+		err := service.Delete(parsedId)
+		if err != nil {
+			sendError(w, http.StatusNotFound, err)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		//parsear los usuarios a Json
+		json.NewEncoder(w).Encode(map[string]string{
+			"response": fmt.Sprintf("user with id %v deleted", id)})
 	}
-	validator.New()
-
-	err := usersService.Delete(parsedId)
-	if err != nil {
-		sendError(w, http.StatusNotFound, err)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	//parsear los usuarios a Json
-	json.NewEncoder(w).Encode(map[string]string{
-		"response": fmt.Sprintf("user with id %v deleted", id)})
+	return fn
 }
 func sendError(w http.ResponseWriter, status int, message error) {
-	fmt.Printf("ERROR ON HANDLERS, %v", message)
+	slog.Error("returning error ", "statusCode", fmt.Sprint(status), "message", fmt.Sprint(message.Error()))
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(map[string]string{
 		"message": fmt.Sprintf(message.Error()),

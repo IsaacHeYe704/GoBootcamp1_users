@@ -10,7 +10,7 @@ import (
 	"bootcam1_users/structures"
 )
 
-func TestGet(t *testing.T) {
+func TestLocalGet(t *testing.T) {
 	t.Run("test get", func(t *testing.T) {
 		testUuid := structures.DefaultUsers[2].ID
 		expectedUser := structures.DefaultUsers[2]
@@ -30,7 +30,7 @@ func TestGet(t *testing.T) {
 		}
 	})
 }
-func TestGetAll(t *testing.T) {
+func TestLocalGetAll(t *testing.T) {
 	t.Run("test get", func(t *testing.T) {
 
 		userManager := structures.NewLocalStorage()
@@ -52,7 +52,7 @@ func TestGetAll(t *testing.T) {
 		}
 	})
 }
-func TestCreate(t *testing.T) {
+func TestLocalCreate(t *testing.T) {
 	t.Run("create user", func(t *testing.T) {
 		testUser := structures.User{
 			uuid.MustParse("465f8b66-1c38-4980-b11f-aa1169f7bbc3"), "Inserted",
@@ -92,7 +92,7 @@ var updatedUser = structures.User{
 	},
 }
 
-func TestUpdate(t *testing.T) {
+func TestLocalUpdate(t *testing.T) {
 	t.Run("update user", func(t *testing.T) {
 
 		updatedUser := structures.User{
@@ -124,7 +124,7 @@ func TestUpdate(t *testing.T) {
 		}
 	})
 }
-func TestDelete(t *testing.T) {
+func TestLocalDelete(t *testing.T) {
 	t.Run("delete user", func(t *testing.T) {
 		testUser := structures.DefaultUsers[0]
 		userManager := structures.NewLocalStorage()
