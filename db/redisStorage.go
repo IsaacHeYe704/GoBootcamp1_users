@@ -35,24 +35,15 @@ func (rs *redisStorage) GetAll() ([]structures.User, error) {
 
 	// Use the SCAN command to retrieve keys matching the pattern
 	pattern := "user_*"
-	var cursor uint64
+	// var cursor uint64
 	keys := make([]string, 0)
-	for {
-		var scanKeys []string
-		var err error
 
-		// Execute the SCAN command
-		scanKeys, cursor, err = rs.connection.Scan(ctx, cursor, pattern, 10).Result()
-		if err != nil {
-			panic(err)
-		}
-
-		keys = append(keys, scanKeys...)
-
-		// Check if the cursor is 0, which means already iterated through all keys
-		if cursor == 0 {
-			break
-		}
+	iter := rs.connection.Scan(ctx, 0, pattern, 0).Iterator()
+	for iter.Next(ctx) {
+		keys = append(keys, iter.Val())
+	}
+	if err := iter.Err(); err != nil {
+		return []structures.User{}, errors.New("error consultando reultados")
 	}
 
 	//use the keys to retrieve the documents
