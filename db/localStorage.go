@@ -2,71 +2,74 @@ package db
 
 import (
 	"bootcam1_users/custom_errors"
-	"bootcam1_users/structures"
 
 	"github.com/google/uuid"
 )
 
 type localStorage struct {
-	users map[uuid.UUID]structures.User
+	entities map[uuid.UUID]interface{}
 }
 
 func NewLocalStorage() Storage {
 	local := localStorage{}
 
 	//initialize users map
-	local.users = make(map[uuid.UUID]structures.User)
+	local.entities = make(map[uuid.UUID]interface{})
 	for _, user := range DefaultUsers {
-		local.users[user.ID] = user
+		local.entities[user.ID] = user
 	}
 
 	return &local
 }
-
-func (l *localStorage) Get(uuid uuid.UUID) (structures.User, error) {
-	user, ok := l.users[uuid]
+func (l *localStorage) Get(id uuid.UUID) (interface{}, error) {
+	entity, ok := l.entities[id]
 
 	if !ok {
-		return structures.User{}, custom_errors.Error_UserNotFound
+		return nil, custom_errors.Error_UserNotFound
 	}
 
-	return user, nil
+	return entity, nil
 }
-func (l *localStorage) GetAll() ([]structures.User, error) {
-	users := make([]structures.User, 0)
-	for _, val := range l.users {
-		users = append(users, val)
+
+func (l *localStorage) GetAll() ([]interface{}, error) {
+	entitiesArr := make([]interface{}, 0)
+	for _, entity := range l.entities {
+		entitiesArr = append(entitiesArr, entity)
 	}
-	return users, nil
+	return entitiesArr, nil
 }
-func (l *localStorage) Create(user structures.User) (structures.User, error) {
+
+func (l *localStorage) Create(id uuid.UUID, entityToCreate interface{}) (interface{}, error) {
 	//crear id aca
-	_, found := l.users[user.ID]
+	_, found := l.entities[id]
 	if found {
-		return structures.User{}, custom_errors.Error_UuidAlreadyExists
+		return nil, custom_errors.Error_UuidAlreadyExists
 	}
 
-	l.users[user.ID] = user
+	l.entities[id] = entityToCreate
 
-	return l.users[user.ID], nil
+	return l.entities[id], nil
+
 }
-func (l *localStorage) Update(uuid uuid.UUID, user structures.User) (structures.User, error) {
-	_, found := l.users[user.ID]
+
+func (l *localStorage) Update(id uuid.UUID, entityToUpdate interface{}) (interface{}, error) {
+	_, found := l.entities[id]
 	if !found {
-		return structures.User{}, custom_errors.Error_UserNotFound
+		return nil, custom_errors.Error_UserNotFound
 	}
 
-	l.users[uuid] = user
+	l.entities[id] = entityToUpdate
 
-	return l.users[user.ID], nil
+	return l.entities[id], nil
 }
-func (l *localStorage) Delete(uuid uuid.UUID) error {
-	_, found := l.users[uuid]
+
+func (l *localStorage) Delete(id uuid.UUID) error {
+	_, found := l.entities[id]
 	if !found {
 		return custom_errors.Error_UserNotFound
 	}
 
-	delete(l.users, uuid)
+	delete(l.entities, id)
 
 	return nil
 }

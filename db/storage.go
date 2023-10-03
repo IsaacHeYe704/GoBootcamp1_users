@@ -1,15 +1,13 @@
 package db
 
 import (
-	"bootcam1_users/structures"
-
 	"github.com/google/uuid"
 )
 
 type Storage interface {
-	Get(uuid.UUID) (structures.User, error)
-	GetAll() ([]structures.User, error)
-	Create(structures.User) (structures.User, error)
-	Update(uuid.UUID, structures.User) (structures.User, error)
+	Get(uuid.UUID) (interface{}, error)
+	GetAll() ([]interface{}, error)
+	Create(uuid.UUID, interface{}) (interface{}, error)
+	Update(uuid.UUID, interface{}) (interface{}, error)
 	Delete(uuid.UUID) error
 }

@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
@@ -14,27 +13,33 @@ import (
 
 type redisStorage struct {
 	connection *redis.Client
+	prefix     string
 }
 
 func NewRedisStorage(connection *redis.Client) Storage {
-	redis := redisStorage{connection: connection}
+	redis := redisStorage{
+		connection: connection,
+		prefix:     "user_",
+	}
 
 	return &redis
 }
-func (rs *redisStorage) Get(uuid uuid.UUID) (structures.User, error) {
-	//read string
-	val, errGet := rs.connection.Get(context.Background(), "user_"+uuid.String()).Result()
+
+func (rs *redisStorage) Get(id uuid.UUID) (interface{}, error) {
+	val, errGet := rs.connection.Get(context.Background(), rs.prefix+id.String()).Result()
 	if errGet != nil {
 		return structures.User{}, custom_errors.Error_UserNotFound
 	}
-	return parseUser(val)
+
+	return val, nil
 }
-func (rs *redisStorage) GetAll() ([]structures.User, error) {
+
+func (rs *redisStorage) GetAll() ([]interface{}, error) {
 	// Create a context
 	ctx := context.TODO()
 
 	// Use the SCAN command to retrieve keys matching the pattern
-	pattern := "user_*"
+	pattern := rs.prefix + "*"
 	// var cursor uint64
 	keys := make([]string, 0)
 
@@ -43,62 +48,64 @@ func (rs *redisStorage) GetAll() ([]structures.User, error) {
 		keys = append(keys, iter.Val())
 	}
 	if err := iter.Err(); err != nil {
-		return []structures.User{}, errors.New("error consultando reultados")
+		return nil, err
 	}
 
 	//use the keys to retrieve the documents
 	values, err := rs.connection.MGet(ctx, keys...).Result()
 	if err != nil {
-		return []structures.User{}, errors.New("error consultando reultados")
+		return nil, errors.New("error consultando reultados 2")
 
 	}
 
 	//parse from jsonString to User struct and return the users
-	return parseUserArray(values)
+	return values, nil
 }
-func (rs *redisStorage) Create(user structures.User) (structures.User, error) {
+
+func (rs *redisStorage) Create(id uuid.UUID, entity interface{}) (interface{}, error) {
 	//check if user exists
-	_, errGet := rs.Get(user.ID)
+	_, errGet := rs.Get(id)
 	if errGet == nil {
 		return structures.User{}, custom_errors.Error_UuidAlreadyExists
 	}
 	//marshal to json string
-	jsonVal, err := json.Marshal(user)
+	jsonVal, err := json.Marshal(entity)
 	if err != nil {
 		return structures.User{}, err
 	}
 
 	//save in database
-	err = rs.connection.Set(context.Background(), "user_"+user.ID.String(), jsonVal, 0).Err()
+	err = rs.connection.Set(context.Background(), "user_"+id.String(), jsonVal, 0).Err()
 	if err != nil {
 		panic(err)
 	}
 
 	//parse string to User
-	return rs.Get(user.ID)
+	return rs.Get(id)
 }
-func (rs *redisStorage) Update(uuid uuid.UUID, newUser structures.User) (structures.User, error) {
+
+func (rs *redisStorage) Update(id uuid.UUID, entity interface{}) (interface{}, error) {
 	//check if user exists
-	_, errGet := rs.Get(uuid)
+	_, errGet := rs.Get(id)
 	if errGet != nil {
 		return structures.User{}, custom_errors.Error_UserNotFound
 	}
 	//marshal to json string
-	jsonVal, err := json.Marshal(newUser)
+	jsonVal, err := json.Marshal(entity)
 	if err != nil {
 		return structures.User{}, err
 	}
 
 	//save in database
-	err = rs.connection.Set(context.Background(), "user_"+newUser.ID.String(), jsonVal, 0).Err()
+	err = rs.connection.Set(context.Background(), "user_"+id.String(), jsonVal, 0).Err()
 	if err != nil {
 		panic(err)
 	}
 
 	//parse string to User
-	return rs.Get(newUser.ID)
-
+	return rs.Get(id)
 }
+
 func (rs *redisStorage) Delete(id uuid.UUID) error {
 	ctx := context.TODO()
 	_, err := rs.Get(id)
@@ -110,20 +117,4 @@ func (rs *redisStorage) Delete(id uuid.UUID) error {
 	return errDeleting
 }
 
-func parseUserArray(usersArr []interface{}) ([]structures.User, error) {
-	usersParsed := make([]structures.User, 0)
-	for _, userToParse := range usersArr {
-		//parse this user
-		user, _ := parseUser(fmt.Sprint(userToParse))
-		usersParsed = append(usersParsed, user)
-	}
-	return usersParsed, nil
-}
-func parseUser(jsonVal string) (structures.User, error) {
-	data := structures.User{}
-	err := json.Unmarshal([]byte(jsonVal), &data)
-	if err != nil {
-		return structures.User{}, custom_errors.Error_ParsingJson
-	}
-	return data, nil
-}
+// // /////
