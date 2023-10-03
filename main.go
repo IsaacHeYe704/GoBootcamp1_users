@@ -1,61 +1,60 @@
 package main
 
 import (
-	"bootcam1_users/structures"
+	"bootcam1_users/db"
+	"bootcam1_users/handlers"
+	"bootcam1_users/service"
 	"fmt"
+	"log"
+	"net/http"
+	"os"
 
-	"github.com/google/uuid"
+	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
+	"github.com/redis/go-redis/v9"
 )
 
 func main() {
-	userManager := structures.NewUserManager()
-	//insert user
-	user, errCreating := userManager.Create(ExampleUser)
-	if errCreating != nil {
-		fmt.Printf("error creating user... %v", errCreating)
+	router := mux.NewRouter()
+	var storage db.Storage
+	//Read .env to choose if we should use localstorage or redis
+	switch goDotEnvVariable("STORAGE") {
+	case "Redis":
+		fmt.Println("USING REDIS STORAGE...")
+		var connection = redis.NewClient(&redis.Options{
+			Addr:     fmt.Sprintf(goDotEnvVariable("REDIS_ADDR")),
+			Password: "", // no password set
+			DB:       0,  // use default DB
+		})
+		storage = db.NewRedisStorage(connection)
+	default:
+		fmt.Println("USING LOCAL STORAGE...")
+		storage = db.NewLocalStorage()
 	}
-	fmt.Printf("user created: %v", user)
-	fmt.Println("//")
-	fmt.Println("//")
-	fmt.Println("//")
+	//declare the user service injecting the storage dependency
+	var usersService = service.NewUserService(storage)
 
-	//read user
-	gotUser, errorReading := userManager.Get(ExampleUser.ID)
-	if errorReading != nil {
-		fmt.Printf("error reading user... %v", errCreating)
-	}
-	fmt.Printf("reading user by id %v , got user: %v ", user.ID, gotUser)
-	fmt.Println("//")
-	fmt.Println("//")
-	fmt.Println("//")
+	//ROUTER
+	router.HandleFunc("/users", handlers.GetAllUsers(usersService)).Methods("GET")
+	router.HandleFunc("/users", handlers.PostUser(usersService)).Methods("POST")
+	router.HandleFunc("/users/{id}", handlers.GetUserById(usersService)).Methods("GET")
+	router.HandleFunc("/users/{id}", handlers.DeleteUsers(usersService)).Methods("DELETE")
+	router.HandleFunc("/users/{id}", handlers.PutUsers(usersService)).Methods("PUT")
 
-	//update user
-	updatedUser, errUpdating := userManager.Update(ExampleUser.ID, UpdateUser)
-	if errorReading != nil {
-		fmt.Printf("error reading user... %v", errUpdating)
-	}
-	fmt.Printf("updating user by id %v , got user: %v ", user.ID, updatedUser)
-	fmt.Println("//")
-	fmt.Println("//")
-	fmt.Println("//")
-
-	//read all users
-	users := userManager.GetAll()
-	fmt.Printf("geting all users : %v ", users)
-
+	fmt.Println("LISTENING TO PORT 3000")
+	// // Bind to a port and pass our router in
+	log.Fatal(http.ListenAndServe(":3000", router))
 }
 
-var ExampleUser = structures.User{
-	ID:       uuid.New(),
-	Name:     "Isaac",
-	LastName: "Herrera Yepes",
-	Email:    "Isaac.herrera@globant.com",
-	Active:   false,
-	Address:  structures.Address{"Bogota", "Colombia", "Calle 135a ·57a 55"}}
-var UpdateUser = structures.User{
-	ID:       ExampleUser.ID,
-	Name:     "updated Isaac",
-	LastName: "updated Herrera Yepes",
-	Email:    "updated.herrera@globant.com",
-	Active:   true,
-	Address:  structures.Address{"Bogota", "Colombia", "Calle 135a ·57a 55"}}
+// Auxiliar function to get a .env var
+func goDotEnvVariable(key string) string {
+
+	// load .env file
+	err := godotenv.Load(".env")
+
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
+
+	return os.Getenv(key)
+}
