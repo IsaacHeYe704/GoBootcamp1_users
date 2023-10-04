@@ -34,7 +34,7 @@ func (us *UserService) Get(uuid uuid.UUID) (structures.User, error) {
 		}
 	}
 
-	return user, err
+	return user, nil
 
 }
 func (us *UserService) GetAll() ([]structures.User, error) {
