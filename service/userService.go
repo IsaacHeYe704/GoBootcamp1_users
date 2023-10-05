@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bootcam1_users/custom_errors"
 	"bootcam1_users/db"
 	"bootcam1_users/structures"
 	"encoding/json"
@@ -22,6 +23,12 @@ func (us *UserService) Get(uuid uuid.UUID) (structures.User, error) {
 
 	slog.Info("Getting user with ", "id", uuid.String())
 	response, err := us.storage.Get(uuid)
+	if err != nil {
+		return structures.User{}, custom_errors.ServiceError{
+			Code:        "NotFound",
+			Description: err.Error(),
+		}
+	}
 
 	//asert user
 	user, ok := response.(structures.User)
@@ -41,6 +48,12 @@ func (us *UserService) GetAll() ([]structures.User, error) {
 	slog.Info("Getting all users ")
 
 	response, err := us.storage.GetAll()
+	if err != nil {
+		return nil, custom_errors.ServiceError{
+			Code:        "ConectionError",
+			Description: "connection refused",
+		}
+	}
 	users := make([]structures.User, 0)
 	//since storage returns []interface{} we should assert or parse that into user Struct so we can return []structures.User
 	for _, v := range response {

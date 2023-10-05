@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
@@ -57,7 +58,7 @@ func (rs *redisStorage) GetAll() ([]interface{}, error) {
 		return nil, errors.New("error consultando reultados 2")
 
 	}
-
+	fmt.Println(values)
 	//parse from jsonString to User struct and return the users
 	return values, nil
 }

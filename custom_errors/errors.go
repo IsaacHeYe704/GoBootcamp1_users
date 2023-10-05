@@ -12,6 +12,10 @@ type ServiceError struct {
 	Description string
 }
 
+func (se ServiceError) Error() string {
+	return se.Description
+}
+
 var Error_UserNotFound = errors.New("user not found")
 var Error_UuidAlreadyExists = errors.New("there is already an user with this uui")
 
