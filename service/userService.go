@@ -37,7 +37,10 @@ func (us *UserService) Get(uuid uuid.UUID) (structures.User, error) {
 		// try to parse it
 		user, err = parseUser(fmt.Sprint(response))
 		if err != nil {
-			return structures.User{}, err
+			return structures.User{}, custom_errors.ServiceError{
+				Code:        "InternalError",
+				Description: "couldnt parse store response to go struct",
+			}
 		}
 	}
 
@@ -85,6 +88,12 @@ func (us *UserService) Create(userRequest structures.UserRequest) (structures.Us
 		Address:  userRequest.Address,
 	}
 	response, err := us.storage.Create(newUuid, userParsed)
+	if err != nil {
+		return structures.User{}, custom_errors.ServiceError{
+			Code:        "IdAlreadyInUse",
+			Description: err.Error(),
+		}
+	}
 	//asert user
 	user, ok := response.(structures.User)
 	if !ok {
@@ -99,7 +108,6 @@ func (us *UserService) Create(userRequest structures.UserRequest) (structures.Us
 }
 func (us *UserService) Update(uuid uuid.UUID, user structures.User) (structures.User, error) {
 	slog.Info("Updating user with ", "id", uuid.String(), ", new data: ", fmt.Sprint(user))
-
 	response, err := us.storage.Update(uuid, user)
 	userUpdated, _ := response.(structures.User)
 	return userUpdated, err
@@ -107,7 +115,14 @@ func (us *UserService) Update(uuid uuid.UUID, user structures.User) (structures.
 func (us *UserService) Delete(uuid uuid.UUID) error {
 	slog.Info("Deleting user with ", "id", uuid.String())
 
-	return us.storage.Delete(uuid)
+	err := us.storage.Delete(uuid)
+	if err != nil {
+		return custom_errors.ServiceError{
+			Code:        "NotFound",
+			Description: err.Error(),
+		}
+	}
+	return nil
 }
 
 func parseUser(jsonVal string) (structures.User, error) {

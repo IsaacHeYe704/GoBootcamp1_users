@@ -2,23 +2,20 @@ package service_test
 
 import (
 	"bootcam1_users/structures"
-	"encoding/json"
-	"errors"
 
 	"github.com/google/uuid"
 )
 
 type StorageMock struct {
-	expectedId    uuid.UUID
 	expectedData  any
 	expectedError error
 }
 
 func (s StorageMock) Get(id uuid.UUID) (interface{}, error) {
-	if s.expectedId != id {
-		return nil, errors.New("user not found")
+	if s.expectedError != nil {
+		return nil, s.expectedError
 	}
-	return s.expectedData, s.expectedError
+	return s.expectedData, nil
 
 }
 
@@ -27,20 +24,25 @@ func (s StorageMock) GetAll() ([]interface{}, error) {
 	return val, s.expectedError
 }
 
-func (s StorageMock) Create(_ uuid.UUID, _ interface{}) (interface{}, error) {
-	panic("not implemented") // TODO: Implement
+func (s StorageMock) Create(id uuid.UUID, user interface{}) (interface{}, error) {
+	if s.expectedError != nil {
+		return structures.User{}, s.expectedError
+	}
+	return s.expectedData, nil
 }
 
 func (s StorageMock) Update(_ uuid.UUID, _ interface{}) (interface{}, error) {
-	panic("not implemented") // TODO: Implement
+	if s.expectedError != nil {
+		return nil, s.expectedError
+	}
+
+	return s.expectedData, nil
 }
 
 func (s StorageMock) Delete(_ uuid.UUID) error {
-	panic("not implemented") // TODO: Implement
+	return s.expectedError
 }
 
-var aux, _ = json.Marshal(MockUsers)
-var jsonMockUser = string(aux)
 var MockUsers = []interface{}{
 	structures.User{
 		ID: uuid.MustParse("465f8b66-1c38-4980-b11f-aa1169f7bbc2"), Name: "Isaac",
@@ -155,5 +157,71 @@ var ExpectedUsers = []structures.User{
 			Country:        "Australia",
 			AddressDetails: "321 George Street",
 		},
+	},
+}
+var mockCreateUserRequest = structures.UserRequest{
+	Name:     "Isaac",
+	LastName: "Herrera Yepes 2",
+	Email:    "Isaac.herrera@globant.com",
+	Active:   false,
+	Address: structures.Address{
+		City:           "Bogota",
+		Country:        "Colombia",
+		AddressDetails: "Calle 135a ·57a 55"},
+}
+var mockCreateUser = structures.User{
+	Name:     "Isaac",
+	LastName: "Herrera Yepes",
+	Email:    "Isaac.herrera@globant.com",
+	Active:   false,
+	Address: structures.Address{
+		City:           "Bogota",
+		Country:        "Colombia",
+		AddressDetails: "Calle 135a ·57a 55"},
+}
+var mockUpdatedUserRequest = structures.UserRequest{
+	Name:     "Isaac updated",
+	LastName: "Herrera Yepes updated",
+	Email:    "updated.mail@example.com",
+	Active:   false,
+	Address: structures.Address{
+		City:           "New York",
+		Country:        "123 Main St",
+		AddressDetails: "USA",
+	},
+}
+var mockUpdatedUser = structures.User{
+	Name:     "Isaac updated",
+	LastName: "Herrera Yepes updated",
+	Email:    "updated.mail@example.com",
+	Active:   false,
+	Address: structures.Address{
+		City:           "New York",
+		Country:        "123 Main St",
+		AddressDetails: "USA",
+	},
+}
+var mockUserJson = `{
+	"id":"465f8b66-1c38-4980-b11f-aa1169f7bbc2",
+	"name": "Isaac insertado",
+	"lastName": "apellidaso",
+	"email": "Isaac.herrera@globant.com",
+	"Active": true,
+	"address": {
+		"city": "Bogota",
+		"country": "Colombia",
+		"address_details": "Calle 135a ·57a 55"
+	}
+}`
+var mockGetUser = structures.User{
+	ID:       uuid.MustParse("465f8b66-1c38-4980-b11f-aa1169f7bbc2"),
+	Name:     "Isaac insertado",
+	LastName: "apellidaso",
+	Email:    "Isaac.herrera@globant.com",
+	Active:   true,
+	Address: structures.Address{
+		City:           "Bogota",
+		Country:        "Colombia",
+		AddressDetails: "Calle 135a ·57a 55",
 	},
 }

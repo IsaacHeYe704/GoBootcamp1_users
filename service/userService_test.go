@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+
+	"github.com/google/uuid"
 )
 
 //fill the exted array with users from the mock
@@ -60,7 +62,7 @@ func TestGetAllService(t *testing.T) {
 
 			if !errors.Is(err, test.expectedError) {
 				fmt.Println(err)
-				t.Fatalf("Expected error: \n %v , \n  but got error: \n %v", test.expectedError, err)
+				t.Fatalf("Expected error: \n %d , \n  but got error: \n %d", test.expectedError, err)
 			}
 			if !reflect.DeepEqual(got, test.expectedResult) {
 				t.Errorf("Expected \n %v, \n  but got \n %v", test.expectedResult, got)
@@ -80,7 +82,6 @@ func TestGetService(t *testing.T) {
 		{
 			name: "Should get an user by id",
 			storageMock: StorageMock{
-				expectedId:    ExpectedUsers[0].ID,
 				expectedData:  MockUsers[0],
 				expectedError: nil,
 			},
@@ -90,7 +91,6 @@ func TestGetService(t *testing.T) {
 		{
 			name: "Should get an user by id",
 			storageMock: StorageMock{
-				expectedId:    ExpectedUsers[1].ID,
 				expectedData:  MockUsers[1],
 				expectedError: nil,
 			},
@@ -98,9 +98,29 @@ func TestGetService(t *testing.T) {
 			expectedError:  nil,
 		},
 		{
+			name: "Should get an user by id if store returns a json",
+			storageMock: StorageMock{
+				expectedData:  mockUserJson,
+				expectedError: nil,
+			},
+			expectedResult: mockGetUser,
+			expectedError:  nil,
+		},
+		{
+			name: "Should get an error if json isnt parsable to User struct",
+			storageMock: StorageMock{
+				expectedData:  "",
+				expectedError: nil,
+			},
+			expectedResult: structures.User{},
+			expectedError: custom_errors.ServiceError{
+				Code:        "InternalError",
+				Description: "couldnt parse store response to go struct",
+			},
+		},
+		{
 			name: "Should get an user not found error",
 			storageMock: StorageMock{
-				expectedId:    ExpectedUsers[1].ID,
 				expectedData:  nil,
 				expectedError: errors.New("user not found"),
 			},
@@ -119,7 +139,140 @@ func TestGetService(t *testing.T) {
 			got, err := service.Get(test.expectedResult.ID)
 
 			if !errors.Is(err, test.expectedError) {
-				t.Fatalf("Expected error: \n %v , \n  but got error: \n %v", test.expectedError, err)
+				t.Fatalf("Expected error: \n %d , \n  but got error: \n %d", test.expectedError, err)
+			}
+			if !reflect.DeepEqual(got, test.expectedResult) {
+				t.Errorf("Expected \n %v, \n  but got \n %v", test.expectedResult, got)
+			}
+		})
+	}
+
+}
+
+func TestCreateService(t *testing.T) {
+	testTable := []struct {
+		name           string
+		storageMock    db.Storage
+		userRequest    structures.UserRequest
+		expectedResult structures.User
+		expectedError  error
+	}{
+		{
+			name: "Should create an user",
+			storageMock: StorageMock{
+				expectedData:  mockCreateUser,
+				expectedError: nil,
+			},
+			userRequest:    mockCreateUserRequest,
+			expectedResult: mockCreateUser,
+			expectedError:  nil,
+		},
+		{
+			name: "Should return an error if id is repeated",
+			storageMock: StorageMock{
+				expectedData:  structures.User{},
+				expectedError: errors.New("id already used"),
+			},
+			userRequest:    mockCreateUserRequest,
+			expectedResult: structures.User{},
+			expectedError: custom_errors.ServiceError{
+				Code:        "IdAlreadyInUse",
+				Description: "id already used",
+			},
+		},
+	}
+
+	for _, test := range testTable {
+		t.Run(test.name, func(t *testing.T) {
+			//
+			service := service.NewUserService(test.storageMock)
+			got, err := service.Create(test.userRequest)
+			test.expectedResult.ID = got.ID
+
+			if !errors.Is(err, test.expectedError) {
+				t.Fatalf("Expected error: \n %d , \n  but got error: \n %d", test.expectedError, err)
+			}
+			if !reflect.DeepEqual(got, test.expectedResult) {
+				t.Errorf("Expected \n %v, \n  but got \n %v", test.expectedResult, got)
+			}
+		})
+	}
+
+}
+
+func TestDeleteService(t *testing.T) {
+	testTable := []struct {
+		name          string
+		storageMock   db.Storage
+		id            uuid.UUID
+		expectedError error
+	}{
+		{
+			name: "Should delete an user",
+			storageMock: StorageMock{
+				expectedData:  nil,
+				expectedError: nil,
+			},
+			id:            mockCreateUser.ID,
+			expectedError: nil,
+		},
+		{
+			name: "Should return error on deliting user not found",
+			storageMock: StorageMock{
+				expectedData:  nil,
+				expectedError: errors.New("user not found"),
+			},
+			id: uuid.UUID{},
+			expectedError: custom_errors.ServiceError{
+				Code:        "NotFound",
+				Description: "user not found",
+			},
+		},
+	}
+
+	for _, test := range testTable {
+		t.Run(test.name, func(t *testing.T) {
+			//
+			service := service.NewUserService(test.storageMock)
+			err := service.Delete(test.id)
+
+			if !errors.Is(err, test.expectedError) {
+				t.Fatalf("Expected error: \n %d , \n  but got error: \n %d", test.expectedError, err)
+			}
+		})
+	}
+
+}
+
+func TestUpdateService(t *testing.T) {
+	testTable := []struct {
+		name           string
+		storageMock    db.Storage
+		expectedResult structures.User
+		expectedError  error
+		updateUser     structures.User
+	}{
+		{
+			name: "Should update an user",
+			storageMock: StorageMock{
+				expectedData:  mockUpdatedUser,
+				expectedError: nil,
+			},
+			expectedResult: mockUpdatedUser,
+			expectedError:  nil,
+			updateUser:     mockUpdatedUser,
+		},
+	}
+
+	for _, test := range testTable {
+		t.Run(test.name, func(t *testing.T) {
+			//
+			service := service.NewUserService(test.storageMock)
+			got, err := service.Update(uuid.UUID{}, test.updateUser)
+			test.expectedResult.ID = got.ID
+
+			if !errors.Is(err, test.expectedError) {
+				t.Fatalf("Expected error: \n %d , \n  but got error: \n %d", test.expectedError, err)
 			}
 			if !reflect.DeepEqual(got, test.expectedResult) {
 				t.Errorf("Expected \n %v, \n  but got \n %v", test.expectedResult, got)
