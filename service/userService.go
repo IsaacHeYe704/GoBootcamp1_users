@@ -67,7 +67,10 @@ func (us *UserService) GetAll() ([]structures.User, error) {
 			//try to parse the item into the user struct
 			user, err := parseUser(fmt.Sprint(v))
 			if err != nil {
-				return nil, err
+				return nil, custom_errors.ServiceError{
+					Code:        "InternalError",
+					Description: "couldnt parse store response to go struct",
+				}
 			}
 			users = append(users, user)
 		}
@@ -101,7 +104,10 @@ func (us *UserService) Create(userRequest structures.UserRequest) (structures.Us
 		// try to parse it
 		user, err = parseUser(fmt.Sprint(response))
 		if err != nil {
-			return structures.User{}, err
+			return structures.User{}, custom_errors.ServiceError{
+				Code:        "InternalError",
+				Description: "couldnt parse store response to go struct",
+			}
 		}
 	}
 	return user, err
@@ -109,8 +115,14 @@ func (us *UserService) Create(userRequest structures.UserRequest) (structures.Us
 func (us *UserService) Update(uuid uuid.UUID, user structures.User) (structures.User, error) {
 	slog.Info("Updating user with ", "id", uuid.String(), ", new data: ", fmt.Sprint(user))
 	response, err := us.storage.Update(uuid, user)
+	if err != nil {
+		return structures.User{}, custom_errors.ServiceError{
+			Code:        "NotFound",
+			Description: err.Error(),
+		}
+	}
 	userUpdated, _ := response.(structures.User)
-	return userUpdated, err
+	return userUpdated, nil
 }
 func (us *UserService) Delete(uuid uuid.UUID) error {
 	slog.Info("Deleting user with ", "id", uuid.String())

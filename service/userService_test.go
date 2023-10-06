@@ -59,7 +59,6 @@ func TestGetAllService(t *testing.T) {
 			//
 			service := service.NewUserService(test.storageMock)
 			got, err := service.GetAll()
-
 			if !errors.Is(err, test.expectedError) {
 				fmt.Println(err)
 				t.Fatalf("Expected error: \n %d , \n  but got error: \n %d", test.expectedError, err)
@@ -180,6 +179,18 @@ func TestCreateService(t *testing.T) {
 				Description: "id already used",
 			},
 		},
+		{
+			name: "Should get an error if json isnt parsable to User struct",
+			storageMock: StorageMock{
+				expectedData:  "",
+				expectedError: nil,
+			},
+			expectedResult: structures.User{},
+			expectedError: custom_errors.ServiceError{
+				Code:        "InternalError",
+				Description: "couldnt parse store response to go struct",
+			},
+		},
 	}
 
 	for _, test := range testTable {
@@ -261,6 +272,18 @@ func TestUpdateService(t *testing.T) {
 			expectedResult: mockUpdatedUser,
 			expectedError:  nil,
 			updateUser:     mockUpdatedUser,
+		}, {
+			name: "Should get an user not found error",
+			storageMock: StorageMock{
+				expectedData:  nil,
+				expectedError: errors.New("user not found"),
+			},
+			expectedResult: structures.User{},
+			expectedError: custom_errors.ServiceError{
+				Code:        "NotFound",
+				Description: "user not found",
+			},
+			updateUser: mockUpdatedUser,
 		},
 	}
 

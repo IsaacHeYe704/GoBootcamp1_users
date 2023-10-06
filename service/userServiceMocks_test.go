@@ -101,6 +101,7 @@ var MockUsers = []interface{}{
 		},
 	},
 }
+
 var ExpectedUsers = []structures.User{
 	{
 		ID: uuid.MustParse("465f8b66-1c38-4980-b11f-aa1169f7bbc2"), Name: "Isaac",
