@@ -20,7 +20,7 @@ func GetAllUsers(service service.UserService) func(w http.ResponseWriter, r *htt
 		//insertar un header
 		w.Header().Set("Content-Type", "application/json")
 		if err != nil {
-			sendError(w, http.StatusNotFound, err)
+			sendError(w, custom_errors.CreateHttpError(err))
 			return
 		}
 		//preguntar a Ever
@@ -42,13 +42,13 @@ func GetUserById(service service.UserService) func(w http.ResponseWriter, r *htt
 
 		parsedId, errParsing := uuid.Parse(id)
 		if errParsing != nil {
-			sendError(w, http.StatusBadRequest, errParsing)
+			sendError(w, custom_errors.CreateHttpError(errParsing))
 			return
 		}
 
 		user, err := service.Get(parsedId)
 		if err != nil {
-			sendError(w, http.StatusNotFound, err)
+			sendError(w, custom_errors.CreateHttpError(err))
 			return
 		}
 
@@ -66,21 +66,26 @@ func PostUser(service service.UserService) func(w http.ResponseWriter, r *http.R
 		decoder := json.NewDecoder(r.Body)
 		//check if body is in json format
 		if err := decoder.Decode(&userRequest); err != nil {
-			sendError(w, http.StatusBadRequest, custom_errors.Error_WrongBodyFormat)
+			httpError := custom_errors.CreateHttpError(err)
+			sendError(w, httpError)
 			return
 		}
 		//validate the user received
 		validate := validator.New()
 		structError := validate.Struct(userRequest)
 		if structError != nil {
-			sendError(w, http.StatusBadRequest, structError)
+			httpError := custom_errors.CreateHttpError(structError)
+			sendError(w, httpError)
 			return
 		}
 
 		//validate if the user could be stored
 		createdUser, err := service.Create(userRequest)
 		if err != nil {
-			sendError(w, http.StatusConflict, err)
+			//convert service error into http error
+			httpError := custom_errors.CreateHttpError(err)
+			//send error
+			sendError(w, httpError)
 			return
 		}
 
@@ -98,7 +103,7 @@ func PutUsers(service service.UserService) func(w http.ResponseWriter, r *http.R
 		//check if the id is a valid uuid
 		parsedId, errParsing := uuid.Parse(id)
 		if errParsing != nil {
-			sendError(w, http.StatusBadRequest, errParsing)
+			sendError(w, custom_errors.CreateHttpError(errParsing))
 			return
 		}
 
@@ -106,7 +111,7 @@ func PutUsers(service service.UserService) func(w http.ResponseWriter, r *http.R
 		decoder := json.NewDecoder(r.Body)
 		//check if body is in json format
 		if err := decoder.Decode(&userRequest); err != nil {
-			sendError(w, http.StatusBadRequest, custom_errors.Error_WrongBodyFormat)
+			sendError(w, custom_errors.CreateHttpError(err))
 			return
 		}
 
@@ -114,7 +119,7 @@ func PutUsers(service service.UserService) func(w http.ResponseWriter, r *http.R
 		validate := validator.New()
 		structError := validate.Struct(userRequest)
 		if structError != nil {
-			sendError(w, http.StatusBadRequest, structError)
+			sendError(w, custom_errors.CreateHttpError(structError))
 			return
 		}
 
@@ -130,7 +135,7 @@ func PutUsers(service service.UserService) func(w http.ResponseWriter, r *http.R
 		//validate if the user could be stored
 		updatedUser, err := service.Update(parsedId, user)
 		if err != nil {
-			sendError(w, http.StatusNotFound, err)
+			sendError(w, custom_errors.CreateHttpError(err))
 			return
 		}
 		json.NewEncoder(w).Encode(updatedUser)
@@ -147,14 +152,14 @@ func DeleteUsers(service service.UserService) func(w http.ResponseWriter, r *htt
 
 		parsedId, errParsing := uuid.Parse(id)
 		if errParsing != nil {
-			sendError(w, http.StatusBadRequest, errParsing)
+			sendError(w, custom_errors.CreateHttpError(errParsing))
 			return
 		}
 		validator.New()
 
 		err := service.Delete(parsedId)
 		if err != nil {
-			sendError(w, http.StatusNotFound, err)
+			sendError(w, custom_errors.CreateHttpError(err))
 			return
 		}
 
@@ -165,10 +170,10 @@ func DeleteUsers(service service.UserService) func(w http.ResponseWriter, r *htt
 	}
 	return fn
 }
-func sendError(w http.ResponseWriter, status int, message error) {
-	slog.Error("returning error ", "statusCode", fmt.Sprint(status), "message", fmt.Sprint(message.Error()))
-	w.WriteHeader(status)
+func sendError(w http.ResponseWriter, httpError custom_errors.HttpError) {
+	slog.Error("returning error ", "statusCode", fmt.Sprint(httpError.Status), "message", fmt.Sprint(httpError.Error()))
+	w.WriteHeader(httpError.Status)
 	json.NewEncoder(w).Encode(map[string]string{
-		"message": fmt.Sprintf(message.Error()),
-		"code":    fmt.Sprintf("%v", status)})
+		"message": fmt.Sprintf(httpError.Error()),
+		"code":    fmt.Sprintf("%v", httpError.Code)})
 }

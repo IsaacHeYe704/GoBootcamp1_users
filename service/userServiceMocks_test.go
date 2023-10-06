@@ -6,41 +6,38 @@ import (
 	"github.com/google/uuid"
 )
 
+type funcGetAllType func() ([]interface{}, error)
+type funcGetByIDType func() (interface{}, error)
+type funcCreateType func() (interface{}, error)
+type funcUpdateType func() (interface{}, error)
+type funcDeleteType func() error
+
 type StorageMock struct {
-	expectedData  any
-	expectedError error
+	getAllMock  funcGetAllType
+	getByIdMock funcGetByIDType
+	createMock  funcCreateType
+	updateMock  funcUpdateType
+	deleteMock  funcDeleteType
 }
 
 func (s StorageMock) Get(id uuid.UUID) (interface{}, error) {
-	if s.expectedError != nil {
-		return nil, s.expectedError
-	}
-	return s.expectedData, nil
-
+	return s.getByIdMock()
 }
 
 func (s StorageMock) GetAll() ([]interface{}, error) {
-	val, _ := s.expectedData.([]interface{})
-	return val, s.expectedError
+	return s.getAllMock()
 }
 
 func (s StorageMock) Create(id uuid.UUID, user interface{}) (interface{}, error) {
-	if s.expectedError != nil {
-		return structures.User{}, s.expectedError
-	}
-	return s.expectedData, nil
+	return s.createMock()
 }
 
 func (s StorageMock) Update(_ uuid.UUID, _ interface{}) (interface{}, error) {
-	if s.expectedError != nil {
-		return nil, s.expectedError
-	}
-
-	return s.expectedData, nil
+	return s.updateMock()
 }
 
 func (s StorageMock) Delete(_ uuid.UUID) error {
-	return s.expectedError
+	return s.deleteMock()
 }
 
 var MockUsers = []interface{}{

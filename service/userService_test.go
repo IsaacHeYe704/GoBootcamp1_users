@@ -25,8 +25,9 @@ func TestGetAllService(t *testing.T) {
 		{
 			name: "Should get all Users",
 			storageMock: StorageMock{
-				expectedData:  MockUsers,
-				expectedError: nil,
+				getAllMock: func() ([]interface{}, error) {
+					return MockUsers, nil
+				},
 			},
 			expectedResult: ExpectedUsers,
 			expectedError:  nil,
@@ -34,8 +35,9 @@ func TestGetAllService(t *testing.T) {
 		{
 			name: "Should get an error if  storage conection could not be stablish",
 			storageMock: StorageMock{
-				expectedData:  make([]interface{}, 0),
-				expectedError: errors.New("connection refused"),
+				getAllMock: func() ([]interface{}, error) {
+					return nil, errors.New("connection refused")
+				},
 			},
 			expectedResult: nil,
 			expectedError: custom_errors.ServiceError{
@@ -46,8 +48,9 @@ func TestGetAllService(t *testing.T) {
 		{
 			name: "Should get an empty array if there are no users",
 			storageMock: StorageMock{
-				expectedData:  make([]interface{}, 0),
-				expectedError: nil,
+				getAllMock: func() ([]interface{}, error) {
+					return make([]interface{}, 0), nil
+				},
 			},
 			expectedResult: make([]structures.User, 0),
 			expectedError:  nil,
@@ -81,8 +84,9 @@ func TestGetService(t *testing.T) {
 		{
 			name: "Should get an user by id",
 			storageMock: StorageMock{
-				expectedData:  MockUsers[0],
-				expectedError: nil,
+				getByIdMock: func() (interface{}, error) {
+					return MockUsers[0], nil
+				},
 			},
 			expectedResult: ExpectedUsers[0],
 			expectedError:  nil,
@@ -90,8 +94,9 @@ func TestGetService(t *testing.T) {
 		{
 			name: "Should get an user by id",
 			storageMock: StorageMock{
-				expectedData:  MockUsers[1],
-				expectedError: nil,
+				getByIdMock: func() (interface{}, error) {
+					return MockUsers[1], nil
+				},
 			},
 			expectedResult: ExpectedUsers[1],
 			expectedError:  nil,
@@ -99,8 +104,9 @@ func TestGetService(t *testing.T) {
 		{
 			name: "Should get an user by id if store returns a json",
 			storageMock: StorageMock{
-				expectedData:  mockUserJson,
-				expectedError: nil,
+				getByIdMock: func() (interface{}, error) {
+					return mockUserJson, nil
+				},
 			},
 			expectedResult: mockGetUser,
 			expectedError:  nil,
@@ -108,8 +114,9 @@ func TestGetService(t *testing.T) {
 		{
 			name: "Should get an error if json isnt parsable to User struct",
 			storageMock: StorageMock{
-				expectedData:  "",
-				expectedError: nil,
+				getByIdMock: func() (interface{}, error) {
+					return "", nil
+				},
 			},
 			expectedResult: structures.User{},
 			expectedError: custom_errors.ServiceError{
@@ -120,8 +127,9 @@ func TestGetService(t *testing.T) {
 		{
 			name: "Should get an user not found error",
 			storageMock: StorageMock{
-				expectedData:  nil,
-				expectedError: errors.New("user not found"),
+				getByIdMock: func() (interface{}, error) {
+					return "", errors.New("user not found")
+				},
 			},
 			expectedResult: structures.User{},
 			expectedError: custom_errors.ServiceError{
@@ -159,8 +167,9 @@ func TestCreateService(t *testing.T) {
 		{
 			name: "Should create an user",
 			storageMock: StorageMock{
-				expectedData:  mockCreateUser,
-				expectedError: nil,
+				createMock: func() (interface{}, error) {
+					return mockCreateUser, nil
+				},
 			},
 			userRequest:    mockCreateUserRequest,
 			expectedResult: mockCreateUser,
@@ -169,8 +178,9 @@ func TestCreateService(t *testing.T) {
 		{
 			name: "Should return an error if id is repeated",
 			storageMock: StorageMock{
-				expectedData:  structures.User{},
-				expectedError: errors.New("id already used"),
+				createMock: func() (interface{}, error) {
+					return nil, errors.New("id already used")
+				},
 			},
 			userRequest:    mockCreateUserRequest,
 			expectedResult: structures.User{},
@@ -182,8 +192,9 @@ func TestCreateService(t *testing.T) {
 		{
 			name: "Should get an error if json isnt parsable to User struct",
 			storageMock: StorageMock{
-				expectedData:  "",
-				expectedError: nil,
+				createMock: func() (interface{}, error) {
+					return "", nil
+				},
 			},
 			expectedResult: structures.User{},
 			expectedError: custom_errors.ServiceError{
@@ -221,8 +232,9 @@ func TestDeleteService(t *testing.T) {
 		{
 			name: "Should delete an user",
 			storageMock: StorageMock{
-				expectedData:  nil,
-				expectedError: nil,
+				deleteMock: func() error {
+					return nil
+				},
 			},
 			id:            mockCreateUser.ID,
 			expectedError: nil,
@@ -230,8 +242,10 @@ func TestDeleteService(t *testing.T) {
 		{
 			name: "Should return error on deliting user not found",
 			storageMock: StorageMock{
-				expectedData:  nil,
-				expectedError: errors.New("user not found"),
+
+				deleteMock: func() error {
+					return errors.New("user not found")
+				},
 			},
 			id: uuid.UUID{},
 			expectedError: custom_errors.ServiceError{
@@ -266,8 +280,9 @@ func TestUpdateService(t *testing.T) {
 		{
 			name: "Should update an user",
 			storageMock: StorageMock{
-				expectedData:  mockUpdatedUser,
-				expectedError: nil,
+				updateMock: func() (interface{}, error) {
+					return mockUpdatedUser, nil
+				},
 			},
 			expectedResult: mockUpdatedUser,
 			expectedError:  nil,
@@ -275,8 +290,9 @@ func TestUpdateService(t *testing.T) {
 		}, {
 			name: "Should get an user not found error",
 			storageMock: StorageMock{
-				expectedData:  nil,
-				expectedError: errors.New("user not found"),
+				updateMock: func() (interface{}, error) {
+					return nil, errors.New("user not found")
+				},
 			},
 			expectedResult: structures.User{},
 			expectedError: custom_errors.ServiceError{

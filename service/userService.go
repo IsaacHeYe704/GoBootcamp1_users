@@ -54,7 +54,7 @@ func (us *UserService) GetAll() ([]structures.User, error) {
 	if err != nil {
 		return nil, custom_errors.ServiceError{
 			Code:        "ConectionError",
-			Description: "connection refused",
+			Description: err.Error(),
 		}
 	}
 	users := make([]structures.User, 0)
