@@ -25,7 +25,7 @@ func (us *UserService) Get(uuid uuid.UUID) (structures.User, error) {
 	response, err := us.storage.Get(uuid)
 	if err != nil {
 		return structures.User{}, custom_errors.ServiceError{
-			Code:        "NotFound",
+			Code:        custom_errors.NotFound,
 			Description: err.Error(),
 		}
 	}
@@ -38,7 +38,7 @@ func (us *UserService) Get(uuid uuid.UUID) (structures.User, error) {
 		user, err = parseUser(fmt.Sprint(response))
 		if err != nil {
 			return structures.User{}, custom_errors.ServiceError{
-				Code:        "InternalError",
+				Code:        custom_errors.Internal,
 				Description: "couldnt parse store response to go struct",
 			}
 		}
@@ -53,7 +53,7 @@ func (us *UserService) GetAll() ([]structures.User, error) {
 	response, err := us.storage.GetAll()
 	if err != nil {
 		return nil, custom_errors.ServiceError{
-			Code:        "ConectionError",
+			Code:        custom_errors.ConectionFailed,
 			Description: err.Error(),
 		}
 	}
@@ -68,7 +68,7 @@ func (us *UserService) GetAll() ([]structures.User, error) {
 			user, err := parseUser(fmt.Sprint(v))
 			if err != nil {
 				return nil, custom_errors.ServiceError{
-					Code:        "InternalError",
+					Code:        custom_errors.Internal,
 					Description: "couldnt parse store response to go struct",
 				}
 			}
@@ -93,7 +93,7 @@ func (us *UserService) Create(userRequest structures.UserRequest) (structures.Us
 	response, err := us.storage.Create(newUuid, userParsed)
 	if err != nil {
 		return structures.User{}, custom_errors.ServiceError{
-			Code:        "IdAlreadyInUse",
+			Code:        custom_errors.DuplicatedId,
 			Description: err.Error(),
 		}
 	}
@@ -105,7 +105,7 @@ func (us *UserService) Create(userRequest structures.UserRequest) (structures.Us
 		user, err = parseUser(fmt.Sprint(response))
 		if err != nil {
 			return structures.User{}, custom_errors.ServiceError{
-				Code:        "InternalError",
+				Code:        custom_errors.Internal,
 				Description: "couldnt parse store response to go struct",
 			}
 		}
@@ -117,7 +117,7 @@ func (us *UserService) Update(uuid uuid.UUID, user structures.User) (structures.
 	response, err := us.storage.Update(uuid, user)
 	if err != nil {
 		return structures.User{}, custom_errors.ServiceError{
-			Code:        "NotFound",
+			Code:        custom_errors.NotFound,
 			Description: err.Error(),
 		}
 	}
@@ -130,7 +130,7 @@ func (us *UserService) Delete(uuid uuid.UUID) error {
 	err := us.storage.Delete(uuid)
 	if err != nil {
 		return custom_errors.ServiceError{
-			Code:        "NotFound",
+			Code:        custom_errors.NotFound,
 			Description: err.Error(),
 		}
 	}

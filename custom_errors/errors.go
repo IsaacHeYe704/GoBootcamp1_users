@@ -2,6 +2,7 @@ package custom_errors
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 )
 
@@ -21,26 +22,24 @@ type ServiceError struct {
 }
 
 func (se ServiceError) Error() string {
-	return se.Description
+	return fmt.Sprintf("service error: %q", se.Description)
 }
+
+// codes
+const (
+	Internal        = "InternalError"
+	NotFound        = "NotFound"
+	DuplicatedId    = "DuplicatedKey"
+	ConectionFailed = "ConectionFailed"
+)
 
 //sentinel errors
 
-var errorParsed = ServiceError{
-	Code:        "InternalError",
-	Description: "couldnt parse store response to go struct",
-}
-var errorNotfound = ServiceError{
-	Code:        "NotFound",
-	Description: "user not found",
-}
-var duplicatedIdError = ServiceError{
-	Code:        "IdAlreadyInUse",
-	Description: "id already used",
-}
-var conectionToStoreError = ServiceError{
-	Code:        "ConectionError",
-	Description: "connection refused",
+var statusMap = map[string]int{
+	Internal:        http.StatusInternalServerError,
+	NotFound:        http.StatusNotFound,
+	DuplicatedId:    http.StatusConflict,
+	ConectionFailed: http.StatusInternalServerError,
 }
 
 func CreateHttpError(e error) HttpError {
@@ -52,37 +51,18 @@ func CreateHttpError(e error) HttpError {
 			Description: e.Error(),
 		}
 	}
-	switch {
-	case errors.Is(e, conectionToStoreError):
-		return HttpError{
-			Code:        serviceError.Code,
-			Status:      http.StatusInternalServerError,
-			Description: serviceError.Description,
-		}
-	case errors.Is(e, errorParsed):
-		return HttpError{
-			Code:        serviceError.Code,
-			Status:      http.StatusInternalServerError,
-			Description: serviceError.Description,
-		}
-	case errors.Is(e, errorNotfound):
-		return HttpError{
-			Code:        serviceError.Code,
-			Status:      http.StatusNotFound,
-			Description: serviceError.Description,
-		}
-	case errors.Is(e, duplicatedIdError):
-		return HttpError{
-			Code:        serviceError.Code,
-			Status:      http.StatusConflict,
-			Description: serviceError.Description,
-		}
-	default:
+	status, found := statusMap[serviceError.Code]
+	if !found {
 		return HttpError{
 			Code:        "InternalError",
 			Status:      http.StatusInternalServerError,
-			Description: "There was an unspecified internal error",
+			Description: serviceError.Description,
 		}
+	}
+	return HttpError{
+		Code:        serviceError.Code,
+		Status:      status,
+		Description: serviceError.Description,
 	}
 
 }
