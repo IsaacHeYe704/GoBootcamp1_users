@@ -3,7 +3,6 @@ package custom_errors
 import (
 	"errors"
 	"fmt"
-	"net/http"
 )
 
 type HttpError struct {
@@ -31,41 +30,10 @@ const (
 	NotFound        = "NotFound"
 	DuplicatedId    = "DuplicatedKey"
 	ConectionFailed = "ConectionFailed"
+	WrongBodyFormat = "WrongBodyFormat"
 )
 
 //sentinel errors
-
-var statusMap = map[string]int{
-	Internal:        http.StatusInternalServerError,
-	NotFound:        http.StatusNotFound,
-	DuplicatedId:    http.StatusConflict,
-	ConectionFailed: http.StatusInternalServerError,
-}
-
-func CreateHttpError(e error) HttpError {
-	serviceError, ok := e.(ServiceError)
-	if !ok {
-		return HttpError{
-			Code:        "InternalError",
-			Status:      http.StatusInternalServerError,
-			Description: e.Error(),
-		}
-	}
-	status, found := statusMap[serviceError.Code]
-	if !found {
-		return HttpError{
-			Code:        "InternalError",
-			Status:      http.StatusInternalServerError,
-			Description: serviceError.Description,
-		}
-	}
-	return HttpError{
-		Code:        serviceError.Code,
-		Status:      status,
-		Description: serviceError.Description,
-	}
-
-}
 
 var Error_UserNotFound = errors.New("user not found")
 var Error_UuidAlreadyExists = errors.New("there is already an user with this uui")
