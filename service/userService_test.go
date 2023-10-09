@@ -41,7 +41,7 @@ func TestGetAllService(t *testing.T) {
 			},
 			expectedResult: nil,
 			expectedError: custom_errors.ServiceError{
-				Code:        "ConectionError",
+				Code:        custom_errors.ConectionFailed,
 				Description: "connection refused",
 			},
 		},
@@ -120,7 +120,7 @@ func TestGetService(t *testing.T) {
 			},
 			expectedResult: structures.User{},
 			expectedError: custom_errors.ServiceError{
-				Code:        "InternalError",
+				Code:        custom_errors.Internal,
 				Description: "couldnt parse store response to go struct",
 			},
 		},
@@ -133,7 +133,7 @@ func TestGetService(t *testing.T) {
 			},
 			expectedResult: structures.User{},
 			expectedError: custom_errors.ServiceError{
-				Code:        "NotFound",
+				Code:        custom_errors.NotFound,
 				Description: "user not found",
 			},
 		},
@@ -185,7 +185,7 @@ func TestCreateService(t *testing.T) {
 			userRequest:    mockCreateUserRequest,
 			expectedResult: structures.User{},
 			expectedError: custom_errors.ServiceError{
-				Code:        "IdAlreadyInUse",
+				Code:        custom_errors.DuplicatedId,
 				Description: "id already used",
 			},
 		},
@@ -198,7 +198,7 @@ func TestCreateService(t *testing.T) {
 			},
 			expectedResult: structures.User{},
 			expectedError: custom_errors.ServiceError{
-				Code:        "InternalError",
+				Code:        custom_errors.Internal,
 				Description: "couldnt parse store response to go struct",
 			},
 		},
@@ -296,7 +296,7 @@ func TestUpdateService(t *testing.T) {
 			},
 			expectedResult: structures.User{},
 			expectedError: custom_errors.ServiceError{
-				Code:        "NotFound",
+				Code:        custom_errors.NotFound,
 				Description: "user not found",
 			},
 			updateUser: mockUpdatedUser,
