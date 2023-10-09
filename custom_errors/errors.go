@@ -23,6 +23,13 @@ type ServiceError struct {
 func (se ServiceError) Error() string {
 	return fmt.Sprintf("service error: %q", se.Description)
 }
+func (se ServiceError) Is(e error) bool {
+	err, ok := e.(ServiceError)
+	if !ok {
+		return false
+	}
+	return err.Code == se.Code
+}
 
 // codes
 const (
@@ -30,7 +37,7 @@ const (
 	NotFound        = "NotFound"
 	DuplicatedId    = "DuplicatedKey"
 	ConectionFailed = "ConectionFailed"
-	WrongBodyFormat = "WrongBodyFormat"
+	WrongBodyFormat = "WrongRequestFormat"
 )
 
 //sentinel errors

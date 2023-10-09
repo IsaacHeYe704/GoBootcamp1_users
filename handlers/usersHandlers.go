@@ -5,6 +5,7 @@ import (
 	"bootcam1_users/service"
 	"bootcam1_users/structures"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -14,20 +15,13 @@ import (
 	"github.com/gorilla/mux"
 )
 
-var statusMap = map[string]int{
-	custom_errors.Internal:        http.StatusInternalServerError,
-	custom_errors.NotFound:        http.StatusNotFound,
-	custom_errors.DuplicatedId:    http.StatusConflict,
-	custom_errors.ConectionFailed: http.StatusInternalServerError,
-}
-
 func GetAllUsers(service service.UserService) func(w http.ResponseWriter, r *http.Request) {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		users, err := service.GetAll()
 		//insertar un header
 		w.Header().Set("Content-Type", "application/json")
 		if err != nil {
-			sendHttpError(w, CreateHttpError(err))
+			sendHttpError(w, castHttpError(err))
 			return
 		}
 		//preguntar a Ever
@@ -59,7 +53,7 @@ func GetUserById(service service.UserService) func(w http.ResponseWriter, r *htt
 
 		user, err := service.Get(parsedId)
 		if err != nil {
-			sendHttpError(w, CreateHttpError(err))
+			sendHttpError(w, castHttpError(err))
 			return
 		}
 
@@ -100,7 +94,7 @@ func PostUser(service service.UserService) func(w http.ResponseWriter, r *http.R
 		createdUser, err := service.Create(userRequest)
 		if err != nil {
 			//convert service error into http error
-			httpError := CreateHttpError(err)
+			httpError := castHttpError(err)
 			//send error
 			sendHttpError(w, httpError)
 			return
@@ -144,7 +138,7 @@ func PutUsers(service service.UserService) func(w http.ResponseWriter, r *http.R
 		validate := validator.New()
 		structError := validate.Struct(userRequest)
 		if structError != nil {
-			sendHttpError(w, CreateHttpError(structError))
+			sendHttpError(w, castHttpError(structError))
 			return
 		}
 
@@ -160,7 +154,7 @@ func PutUsers(service service.UserService) func(w http.ResponseWriter, r *http.R
 		//validate if the user could be stored
 		updatedUser, err := service.Update(parsedId, user)
 		if err != nil {
-			sendHttpError(w, CreateHttpError(err))
+			sendHttpError(w, castHttpError(err))
 			return
 		}
 		json.NewEncoder(w).Encode(updatedUser)
@@ -188,7 +182,7 @@ func DeleteUsers(service service.UserService) func(w http.ResponseWriter, r *htt
 
 		err := service.Delete(parsedId)
 		if err != nil {
-			sendHttpError(w, CreateHttpError(err))
+			sendHttpError(w, castHttpError(err))
 			return
 		}
 
@@ -200,29 +194,43 @@ func DeleteUsers(service service.UserService) func(w http.ResponseWriter, r *htt
 	return fn
 }
 
-func CreateHttpError(e error) custom_errors.HttpError {
-	serviceError, ok := e.(custom_errors.ServiceError)
+func castHttpError(err error) custom_errors.HttpError {
+	errAssert, ok := err.(custom_errors.ServiceError)
+
 	if !ok {
 		return custom_errors.HttpError{
-			Code:        "InternalError",
+			Code:        errAssert.Code,
 			Status:      http.StatusInternalServerError,
-			Description: e.Error(),
+			Description: errAssert.Error(),
 		}
 	}
-	status, found := statusMap[serviceError.Code]
-	if !found {
+
+	if errors.Is(errAssert, custom_errors.ServiceError{Code: custom_errors.NotFound}) {
 		return custom_errors.HttpError{
-			Code:        "InternalError",
+			Code:        errAssert.Code,
+			Status:      http.StatusNotFound,
+			Description: errAssert.Error(),
+		}
+	}
+	if errors.Is(errAssert, custom_errors.ServiceError{Code: custom_errors.ConectionFailed}) {
+		return custom_errors.HttpError{
+			Code:        errAssert.Code,
 			Status:      http.StatusInternalServerError,
-			Description: serviceError.Description,
+			Description: errAssert.Error(),
+		}
+	}
+	if errors.Is(errAssert, custom_errors.ServiceError{Code: custom_errors.DuplicatedId}) {
+		return custom_errors.HttpError{
+			Code:        errAssert.Code,
+			Status:      http.StatusConflict,
+			Description: errAssert.Error(),
 		}
 	}
 	return custom_errors.HttpError{
-		Code:        serviceError.Code,
-		Status:      status,
-		Description: serviceError.Description,
+		Code:        errAssert.Code,
+		Status:      http.StatusInternalServerError,
+		Description: errAssert.Error(),
 	}
-
 }
 func sendHttpError(w http.ResponseWriter, httpError custom_errors.HttpError) {
 	slog.Error("returning error ", "statusCode", fmt.Sprint(httpError.Status), "message", fmt.Sprint(httpError.Error()))
