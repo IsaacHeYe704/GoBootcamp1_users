@@ -1,9 +1,49 @@
 package custom_errors
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
-var Error_UserNotFound = errors.New("User not found")
+type HttpError struct {
+	Code        string
+	Status      int
+	Description string
+}
+
+func (he HttpError) Error() string {
+	return he.Description
+}
+
+type ServiceError struct {
+	Code        string
+	Description string
+}
+
+func (se ServiceError) Error() string {
+	return fmt.Sprintf("service error: %q", se.Description)
+}
+func (se ServiceError) Is(e error) bool {
+	err, ok := e.(ServiceError)
+	if !ok {
+		return false
+	}
+	return err.Code == se.Code
+}
+
+// codes
+const (
+	Internal        = "InternalError"
+	NotFound        = "NotFound"
+	DuplicatedId    = "DuplicatedKey"
+	ConectionFailed = "ConectionFailed"
+	WrongBodyFormat = "WrongRequestFormat"
+)
+
+//sentinel errors
+
+var Error_UserNotFound = errors.New("user not found")
 var Error_UuidAlreadyExists = errors.New("there is already an user with this uui")
 
-var Error_WrongBodyFormat = errors.New("Wrong body format")
-var Error_ParsingJson = errors.New("Could not parse Json to User")
+var Error_WrongBodyFormat = errors.New("wrong body format")
+var Error_ParsingJson = errors.New("could not parse Json to User")

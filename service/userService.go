@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bootcam1_users/custom_errors"
 	"bootcam1_users/db"
 	"bootcam1_users/structures"
 	"encoding/json"
@@ -22,6 +23,12 @@ func (us *UserService) Get(uuid uuid.UUID) (structures.User, error) {
 
 	slog.Info("Getting user with ", "id", uuid.String())
 	response, err := us.storage.Get(uuid)
+	if err != nil {
+		return structures.User{}, custom_errors.ServiceError{
+			Code:        custom_errors.NotFound,
+			Description: err.Error(),
+		}
+	}
 
 	//asert user
 	user, ok := response.(structures.User)
@@ -30,17 +37,26 @@ func (us *UserService) Get(uuid uuid.UUID) (structures.User, error) {
 		// try to parse it
 		user, err = parseUser(fmt.Sprint(response))
 		if err != nil {
-			return structures.User{}, err
+			return structures.User{}, custom_errors.ServiceError{
+				Code:        custom_errors.Internal,
+				Description: "couldnt parse store response to go struct",
+			}
 		}
 	}
 
-	return user, err
+	return user, nil
 
 }
 func (us *UserService) GetAll() ([]structures.User, error) {
 	slog.Info("Getting all users ")
 
 	response, err := us.storage.GetAll()
+	if err != nil {
+		return nil, custom_errors.ServiceError{
+			Code:        custom_errors.ConectionFailed,
+			Description: err.Error(),
+		}
+	}
 	users := make([]structures.User, 0)
 	//since storage returns []interface{} we should assert or parse that into user Struct so we can return []structures.User
 	for _, v := range response {
@@ -51,7 +67,10 @@ func (us *UserService) GetAll() ([]structures.User, error) {
 			//try to parse the item into the user struct
 			user, err := parseUser(fmt.Sprint(v))
 			if err != nil {
-				return nil, err
+				return nil, custom_errors.ServiceError{
+					Code:        custom_errors.Internal,
+					Description: "couldnt parse store response to go struct",
+				}
 			}
 			users = append(users, user)
 		}
@@ -72,6 +91,12 @@ func (us *UserService) Create(userRequest structures.UserRequest) (structures.Us
 		Address:  userRequest.Address,
 	}
 	response, err := us.storage.Create(newUuid, userParsed)
+	if err != nil {
+		return structures.User{}, custom_errors.ServiceError{
+			Code:        custom_errors.DuplicatedId,
+			Description: err.Error(),
+		}
+	}
 	//asert user
 	user, ok := response.(structures.User)
 	if !ok {
@@ -79,22 +104,37 @@ func (us *UserService) Create(userRequest structures.UserRequest) (structures.Us
 		// try to parse it
 		user, err = parseUser(fmt.Sprint(response))
 		if err != nil {
-			return structures.User{}, err
+			return structures.User{}, custom_errors.ServiceError{
+				Code:        custom_errors.Internal,
+				Description: "couldnt parse store response to go struct",
+			}
 		}
 	}
 	return user, err
 }
 func (us *UserService) Update(uuid uuid.UUID, user structures.User) (structures.User, error) {
 	slog.Info("Updating user with ", "id", uuid.String(), ", new data: ", fmt.Sprint(user))
-
 	response, err := us.storage.Update(uuid, user)
+	if err != nil {
+		return structures.User{}, custom_errors.ServiceError{
+			Code:        custom_errors.NotFound,
+			Description: err.Error(),
+		}
+	}
 	userUpdated, _ := response.(structures.User)
-	return userUpdated, err
+	return userUpdated, nil
 }
 func (us *UserService) Delete(uuid uuid.UUID) error {
 	slog.Info("Deleting user with ", "id", uuid.String())
 
-	return us.storage.Delete(uuid)
+	err := us.storage.Delete(uuid)
+	if err != nil {
+		return custom_errors.ServiceError{
+			Code:        custom_errors.NotFound,
+			Description: err.Error(),
+		}
+	}
+	return nil
 }
 
 func parseUser(jsonVal string) (structures.User, error) {

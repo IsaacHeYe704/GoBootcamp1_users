@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
@@ -25,10 +26,12 @@ func NewRedisStorage(connection *redis.Client) Storage {
 	return &redis
 }
 
+var notFoundRedis = errors.New("redis: nil")
+
 func (rs *redisStorage) Get(id uuid.UUID) (interface{}, error) {
 	val, errGet := rs.connection.Get(context.Background(), rs.prefix+id.String()).Result()
 	if errGet != nil {
-		return structures.User{}, custom_errors.Error_UserNotFound
+		return structures.User{}, errGet
 	}
 
 	return val, nil
@@ -54,10 +57,10 @@ func (rs *redisStorage) GetAll() ([]interface{}, error) {
 	//use the keys to retrieve the documents
 	values, err := rs.connection.MGet(ctx, keys...).Result()
 	if err != nil {
-		return nil, errors.New("error consultando reultados 2")
+		return nil, err
 
 	}
-
+	fmt.Println(values)
 	//parse from jsonString to User struct and return the users
 	return values, nil
 }
@@ -66,7 +69,7 @@ func (rs *redisStorage) Create(id uuid.UUID, entity interface{}) (interface{}, e
 	//check if user exists
 	_, errGet := rs.Get(id)
 	if errGet == nil {
-		return structures.User{}, custom_errors.Error_UuidAlreadyExists
+		return structures.User{}, errGet
 	}
 	//marshal to json string
 	jsonVal, err := json.Marshal(entity)

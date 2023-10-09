@@ -31,6 +31,33 @@ Deben haber logs de los métodos principales (usar slog)
 Igualmente la API debe soportar dos tipos de storage. El primero que ya se usó es el in-memory y el segundo debe ser Redis. Por configuración se debe usar uno o el otro. (usar interfaces para lograr esta funcionalidad)
 
 
+## Third Task
+Para esta tercera parte se debe implementar unit testing para el package principal (service).
+Para ellos se debe hacer uso de la inyección de dependencias y el mockeo para lograr cubrir la mayor cantidad de escenarios posibles. Se requiere un coverage por encima del 85%.
+
+De igual manera se deben implementar errores custom que agreguen más detalle sobre los errores ocurridos dentro de la aplicación. 
+Se deben crear por lo menos tres tipos de custom errors. StorageError que captura los errores relacionados a las dbs in-memory y Redis. ServiceError relacionado a los errores ocurridos dentro del package service y HTTPError que son los errores encontrados a nivel de handlers.
+Cada tipo de error debe contener los atributos code (codigo del error - string), description (error encontrado en formato string).
+
+Ejemplo de los errores internos:
+ServiceError{
+    Code: "DBConnectionFailed",
+    Description: "Unable to connect to the DB"
+}
+
+
+Ejemplo de los errores HTTP:
+HTTPError{
+    Code: "NotFound",
+    Status: 404,
+    Description: "User not found"
+}
+--
+
+A nivel de handlers van a necesitar identificar que tipo de error se envió desde la API, para eso deben hacer uso de errors.Is() o errors.As() a fin de saber que status code enviar como response.
+
+Igual que siempre no duden en contactarme si queda alguna duda.
+
 ## Usage
 you can check the package by running its tests which are writen under the file /structures/users_test.go
 ```go
